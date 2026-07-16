@@ -6,6 +6,7 @@ import type { MemoryStore } from '../memory/store.js';
 import type { LlmClient } from '../agents/llm.js';
 import { rankRecipients } from '../scoring/engine.js';
 import { draftOffer } from '../agents/offer.js';
+import { memoryHint } from '../agents/memoryHint.js';
 import { ENV } from '../../config.js';
 import { SimulatorVoice } from './simulator.js';
 import { VapiVoice } from './vapi.js';
@@ -41,18 +42,14 @@ function genId(): string {
   return `id_${Date.now().toString(36)}_${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
-/** Short human-readable memory blurb handed to the offer drafter (Agent 2). */
-function buildMemoryContext(recipient: Recipient, recent: HistoryEvent[]): string {
-  const parts: string[] = [];
-  parts.push(`${recipient.name} (${recipient.type}). Infrastructure: ${recipient.infrastructure.join(', ') || 'none'}.`);
-  if (recipient.accepts.length) parts.push(`Prefers: ${recipient.accepts.join(', ')}.`);
-  if (recipient.rejects.length) parts.push(`Does not take: ${recipient.rejects.join(', ')}.`);
-  if (recipient.bestCallWindow) parts.push(`Best call window: ${recipient.bestCallWindow}.`);
-  const declines = recent.filter((e) => e.outcome === 'declined').slice(-3);
-  if (declines.length) {
-    parts.push(`Recent declines: ${declines.map((e) => e.reason ?? 'no reason').join('; ')}.`);
-  }
-  return parts.join(' ');
+/**
+ * A single humane contextual clause for the offer drafter (Agent 2).
+ * UI_REDESIGN §D.3: the offer must NEVER recite a recipient's DB row, so we
+ * hand it at most one short, already-distilled clause (or '' for none) rather
+ * than an enumerated Infrastructure/Prefers/Does-not-take dump.
+ */
+function buildMemoryContext(recipient: Recipient, item: DonationItem): string {
+  return memoryHint(recipient, item);
 }
 
 /**
@@ -88,8 +85,7 @@ export async function dispatchItem(
       deps.voice.setHistory(await store.listHistory());
     }
 
-    const recentForRecipient = await store.listHistory(recipient.id);
-    const memoryContext = buildMemoryContext(recipient, recentForRecipient);
+    const memoryContext = buildMemoryContext(recipient, item);
 
     let offer: OfferDraft;
     try {

@@ -2,12 +2,13 @@ import type {
   DonationItem, OfferDraft, Recipient, CallAttempt, CallOutcome, HistoryEvent,
 } from '../types.js';
 import type { VoiceProvider } from './caller.js';
+import { humanize } from '../text/humanize.js';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** 'fresh_produce' → 'fresh produce' — used in reasons and 7-day memory matching. */
 function humanizeCategory(category: string): string {
-  return category.replace(/_/g, ' ');
+  return humanize(category);
 }
 
 /**
@@ -89,7 +90,7 @@ export class SimulatorVoice implements VoiceProvider {
         outcome: 'declined',
         reason: `no cold storage available`,
         personaLine:
-          `We'd love to, but we've only got ${recipient.infrastructure.join(', ') || 'dry shelving'} ` +
+          `We'd love to, but we've only got ${recipient.infrastructure.map(humanize).join(', ') || 'dry shelving'} ` +
           `— no cold storage for something that needs refrigeration.`,
       };
     }

@@ -57,6 +57,21 @@ export function scoreColor(score: ScoreBreakdown | undefined): string {
   return rampColor(score.total);
 }
 
+/**
+ * Turn a raw enum token into human copy. Used EVERYWHERE a token could reach the
+ * screen (categories, infrastructure, outcomes, recipient types, patch values).
+ *   fresh_produce  → "fresh produce"
+ *   walk_in_fridge → "walk-in fridge"
+ *   dry_goods      → "dry goods"
+ *   no_answer      → "no answer"
+ */
+export function humanize(token: unknown): string {
+  return String(token ?? '')
+    .replace(/walk_in/g, 'walk-in')
+    .replace(/_/g, ' ')
+    .trim();
+}
+
 export const CATEGORY_LABELS: Record<ItemCategory, string> = {
   fresh_produce: 'Fresh produce',
   fruit: 'Fruit',

@@ -1,5 +1,6 @@
 import type { LlmClient } from './llm.js';
 import { readTaskPrompt } from './protocol.js';
+import { humanize, firstName, fmtUrgency } from '../text/humanize.js';
 import type {
   ParsedDonation,
   ItemCategory,
@@ -222,30 +223,21 @@ function round2(n: number): number {
 // Agent 2 — offer template
 // ---------------------------------------------------------------------------
 
+// UI_REDESIGN §D.3 — kept in lockstep with offer.ts templateScript: ≤2 spoken
+// sentences, first-name greeting, one optional memory clause, the ask. Never
+// enumerates infrastructure/accepts/rejects, never prints raw enum tokens.
 function mockOffer(input: Record<string, unknown>): { script: string; summary: string } {
   const itemName = str(input.itemName, 'the donation');
   const qtyLbs = num(input.qtyLbs, 0);
-  const category = str(input.category, 'other');
   const hoursToSpoil = num(input.hoursToSpoil, 0);
-  const needsRefrigeration = Boolean(input.needsRefrigeration);
-  const donorName = str(input.donorName, '');
   const recipientName = str(input.recipientName, 'your organization');
-  const contact = str(input.recipientContact, recipientName);
-  const pickupLocation = str(input.pickupLocation, '');
-  const memoryContext = str(input.memoryContext, '');
+  const contact = firstName(input.contactFirstName ?? input.recipientContact) || recipientName;
+  const hint = str(input.memoryHint, '');
 
-  const parts: string[] = [];
-  parts.push(`Hi ${contact}, this is Donna calling on behalf of ${donorName || 'a local food donor'}.`);
-  parts.push(
-    `We have about ${fmtLbs(qtyLbs)} of ${itemName} (${prettyCategory(category)})` +
-      `${needsRefrigeration ? ', which needs refrigeration' : ''}` +
-      `${pickupLocation ? `, available for pickup at ${pickupLocation}` : ''}.`,
-  );
-  parts.push(`It should stay good for roughly ${fmtHours(hoursToSpoil)}.`);
-  if (memoryContext) parts.push(memoryContext);
-  parts.push(`Could ${recipientName} take this today?`);
+  const first = `Hi ${contact}, I've got ${fmtLbs(qtyLbs)} of ${itemName} that needs to move ${fmtUrgency(hoursToSpoil)}.`;
+  const ask = hint ? `${hint}, so could your team take it today?` : 'Could your team take it today?';
 
-  const script = parts.join(' ');
+  const script = `${first} ${ask}`;
   const summary = `Offer ${fmtLbs(qtyLbs)} of ${itemName} to ${recipientName}.`;
   return { script, summary };
 }
@@ -531,17 +523,13 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 function prettyCategory(c: string): string {
-  return c.replace(/_/g, ' ');
+  return humanize(c);
 }
 function prettyInfra(i: Infrastructure): string {
-  return i.replace(/_/g, ' ');
+  return humanize(i);
 }
 function fmtLbs(n: number): string {
   return `${n} lbs`;
-}
-function fmtHours(h: number): string {
-  if (h >= 48) return `${Math.round(h / 24)} days`;
-  return `${h} hours`;
 }
 function clampWords(text: string, max: number): string {
   const words = text.split(/\s+/);

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDonna } from '../state';
 import type { ConfigPatch, ManagerReply } from '../types';
-import { TERM_COLORS, TERM_LABELS } from '../theme';
+import { TERM_COLORS, TERM_LABELS, humanize } from '../theme';
 import { TERM_KEYS } from '../types';
 
 const SUGGESTIONS = [
@@ -10,9 +10,8 @@ const SUGGESTIONS = [
   'Stop sending fresh produce to Bayview',
 ];
 
-export function ManagerDrawer() {
-  const { chat, managerSend, busy, config, updateConfig, recipientsById, appliedPatchCount } = useDonna();
-  const [open, setOpen] = useState(false);
+export function ManagerDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { chat, managerSend, busy, config, updateConfig, recipientsById } = useDonna();
   const [text, setText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -29,18 +28,14 @@ export function ManagerDrawer() {
 
   return (
     <>
-      <button className="drawer-fab" onClick={() => setOpen((o) => !o)} title="Manager console">
-        🗨
-        {appliedPatchCount > 0 && <span className="badge">{appliedPatchCount}</span>}
-      </button>
-
+      {open && <div className="drawer-scrim" onClick={onClose} />}
       <div className={`drawer${open ? ' open' : ''}`}>
         <div className="drawer-head">
           <div>
             <h3>Manager console</h3>
             <div className="sub">Teach Donna in plain English</div>
           </div>
-          <button className="btn ghost small x" onClick={() => setOpen(false)}>✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="drawer-cfg">
@@ -101,7 +96,7 @@ export function ManagerDrawer() {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
           />
-          <button className="btn cool" onClick={() => send()} disabled={busy.chat || !text.trim()}>Send</button>
+          <button className="btn hot" onClick={() => send()} disabled={busy.chat || !text.trim()}>Send</button>
         </div>
       </div>
     </>
@@ -126,8 +121,8 @@ function describePatch(p: ConfigPatch, name: (id?: string) => string): string {
   const who = name(p.recipientId);
   const v = p.value as any;
   switch (p.op) {
-    case 'add_infrastructure': return `${who} ➕ ${String(v)}`;
-    case 'remove_infrastructure': return `${who} ➖ ${String(v)}`;
+    case 'add_infrastructure': return `${who} ➕ ${humanize(v)}`;
+    case 'remove_infrastructure': return `${who} ➖ ${humanize(v)}`;
     case 'set_accepts': return `${who} accepts → ${arr(v)}`;
     case 'set_rejects': return `${who} rejects → ${arr(v)}`;
     case 'set_volume': return `${who} weekly volume → ${Number(v).toLocaleString()} lb`;
@@ -139,6 +134,6 @@ function describePatch(p: ConfigPatch, name: (id?: string) => string): string {
 }
 
 function arr(v: unknown): string {
-  if (Array.isArray(v)) return v.join(', ');
-  return String(v);
+  if (Array.isArray(v)) return v.map((x) => humanize(x)).join(', ');
+  return humanize(v);
 }

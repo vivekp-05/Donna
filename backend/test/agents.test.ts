@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { extractJson } from '../src/core/agents/llm.js';
+import { LlmMock } from '../src/core/agents/llmMock.js';
 import { parseDonation } from '../src/core/agents/intake.js';
 import { managerChat } from '../src/core/agents/manager.js';
 import { composeDonorMessage } from '../src/core/agents/callback.js';
@@ -229,7 +230,7 @@ describe('callback — mentions every item', () => {
       donorName: 'Marcus', items,
     };
 
-    const msg = await composeDonorMessage(donation);
+    const msg = await composeDonorMessage(donation, new LlmMock());
     expect(msg).toContain('strawberries');
     expect(msg).toContain('canned black beans');
     expect(msg).toContain('day-old bread');
@@ -238,6 +239,11 @@ describe('callback — mentions every item', () => {
     expect(msg).toContain('Marcus');
     // ≤120 words
     expect(msg.split(/\s+/).length).toBeLessThanOrEqual(120);
+    // §D.3 — humane copy: never dumps the DB row or raw enum tokens.
+    expect(msg).not.toContain('Infrastructure:');
+    expect(msg).not.toContain('Prefers:');
+    expect(msg).not.toContain('Does not take:');
+    expect(msg).not.toMatch(/[a-z]_[a-z]/); // no snake_case enum tokens
   });
 });
 
@@ -245,8 +251,8 @@ describe('callback — mentions every item', () => {
 // Agent 2 — offer draft is built from real inputs
 // ---------------------------------------------------------------------------
 
-describe('offer — draft references real inputs', () => {
-  it('builds a script + summary tied to item and recipient', async () => {
+describe('offer — draft is a short, human script (§D.3)', () => {
+  it('greets by first name, states the item, and never dumps the DB row', async () => {
     const item: DonationItem = {
       id: 'i1', donationId: 'd1', item: 'strawberries', qtyLbs: 5000,
       category: 'fresh_produce', hoursToSpoil: 48, needsRefrigeration: true,
@@ -257,13 +263,47 @@ describe('offer — draft references real inputs', () => {
       receivedAt: new Date().toISOString(), rawText: '', status: 'scored',
       donorName: 'Marcus', pickupLocation: '2200 Jerrold Ave', items: [item],
     };
-    const recipient = stMarys();
-    const draft = await draftOffer(item, donation, recipient, '', undefined);
+    const recipient = stMarys(); // leadContact 'Rosa'
+    const draft = await draftOffer(item, donation, recipient, '', new LlmMock());
 
     expect(draft.itemId).toBe('i1');
     expect(draft.recipientId).toBe('r-stmarys');
+
+    // Tied to the real inputs, in a warm spoken register.
     expect(draft.script).toContain('strawberries');
-    expect(draft.script).toContain('5000');
+    expect(draft.script).toContain('Rosa'); // first-name greeting
     expect(draft.summary.toLowerCase()).toContain('strawberries');
+
+    // Forbidden: reciting the recipient's DB row / raw enum tokens.
+    expect(draft.script).not.toContain('Infrastructure:');
+    expect(draft.script).not.toContain('Prefers:');
+    expect(draft.script).not.toContain('Does not take:');
+    expect(draft.script).not.toMatch(/[a-z]_[a-z]/); // no snake_case enum tokens
+
+    // ≤2 spoken sentences.
+    const sentences = draft.script.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
+    expect(sentences.length).toBeLessThanOrEqual(2);
+  });
+
+  it('includes at most one contextual memory clause when relevant', async () => {
+    const item: DonationItem = {
+      id: 'i2', donationId: 'd2', item: 'fresh spinach', qtyLbs: 300,
+      category: 'fresh_produce', hoursToSpoil: 36, needsRefrigeration: true,
+      status: 'pending', attempts: [],
+    };
+    const donation: Donation = {
+      id: 'd2', sourceChannel: 'voice', sourceContact: 'x',
+      receivedAt: new Date().toISOString(), rawText: '', status: 'scored',
+      donorName: 'Marcus', items: [item],
+    };
+    // A recipient WITH a walk-in fridge → the one allowed contextual clause,
+    // humanized (never the raw 'walk_in_fridge' token).
+    const recipient = { ...stMarys(), infrastructure: ['walk_in_fridge' as const] };
+    const draft = await draftOffer(item, donation, recipient, '', new LlmMock());
+
+    expect(draft.script).toContain('walk-in fridge');
+    expect(draft.script).not.toContain('walk_in_fridge');
+    const sentences = draft.script.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
+    expect(sentences.length).toBeLessThanOrEqual(2);
   });
 });

@@ -136,6 +136,49 @@ describe('POST /api/demo/canned', () => {
   });
 });
 
+describe('GET /api/calls (§D.5)', () => {
+  it('flattens every attempt across donations, newest first', async () => {
+    const older: DonationItem = {
+      ...item('i1'),
+      attempts: [{
+        recipientId: 'rA', recipientName: 'Harbor Pantry', outcome: 'declined',
+        reason: 'still overstocked on baked', transcript: [],
+        at: '2026-07-16T10:00:00.000Z', simulated: true,
+      }],
+    };
+    const newer: DonationItem = {
+      ...item('i2'),
+      attempts: [{
+        recipientId: 'rB', recipientName: 'Chinatown Pantry', outcome: 'accepted',
+        transcript: [], at: '2026-07-16T12:00:00.000Z', simulated: true,
+      }],
+    };
+    const d1 = donation('d1', [older]);
+    const d2 = donation('d2', [newer]);
+    const app = server(makeStore([d1, d2]));
+
+    const res = await app.request('/api/calls');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any[];
+    expect(body).toHaveLength(2);
+    // newest-first
+    expect(body[0].recipientName).toBe('Chinatown Pantry');
+    expect(body[0].donationId).toBe('d2');
+    expect(body[0].itemId).toBe('i2');
+    expect(body[0].itemName).toBe('strawberries');
+    expect(body[0].outcome).toBe('accepted');
+    expect(body[1].donationId).toBe('d1');
+    expect(body[1].outcome).toBe('declined');
+  });
+
+  it('returns an empty array when there are no attempts', async () => {
+    const app = server(makeStore([donation('d1', [item('i1')])]));
+    const res = await app.request('/api/calls');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+});
+
 describe('POST /api/items/:id/rank', () => {
   it('re-ranks with a weight override and returns ranked + explanation', async () => {
     const d = donation('d1', [item('i1')]);

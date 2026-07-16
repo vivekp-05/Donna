@@ -19,6 +19,14 @@ export function createLlm(): LlmClient {
       return new LlmAnthropic();
     case 'insforge':
       return new LlmOpenAICompat();
+    case 'gemini':
+      // §D.1 — Google's OpenAI-compatible endpoint, reusing LlmOpenAICompat.
+      return new LlmOpenAICompat({
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: ENV.geminiApiKey,
+        model: ENV.geminiModel || 'gemini-2.5-flash',
+        label: 'Gemini',
+      });
     case 'mock':
     default:
       return new LlmMock();

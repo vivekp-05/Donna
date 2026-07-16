@@ -25,34 +25,26 @@ export function EquityTab() {
     <div className="equity">
       <div className="equity-inner">
         <div className="equity-head">
-          <div>
-            <h2>Equity simulation</h2>
-            <p>
-              Replay {equity?.drops ?? 30} random donations under two policies — <b style={{ color: NEAREST }}>Nearest-feasible</b> vs{' '}
-              <b style={{ color: DONNA }}>Donna</b> — and compare how evenly food lands across the network. Lower Gini = fairer.
-            </p>
-          </div>
+          <h2>Equity</h2>
+          <span className="equity-sub"><b style={{ color: NEAREST }}>Nearest-feasible</b> vs <b style={{ color: DONNA }}>Donna</b> · lower Gini = fairer</span>
           <button className="btn hot" style={{ marginLeft: 'auto' }} onClick={() => runEquity(30)} disabled={busy.equity}>
-            {busy.equity ? <span className="loading-line"><span className="spinner" /> Simulating…</span> : '▶ Run 30-drop simulation'}
+            {busy.equity ? <span className="loading-line"><span className="spinner" /> Simulating…</span> : 'Run 30-drop simulation'}
           </button>
         </div>
 
         {!equity ? (
-          <div className="empty" style={{ padding: 60 }}>
-            No simulation yet. Hit <b>▶ Run 30-drop simulation</b> to compare fairness under both policies.
-          </div>
+          <div className="detail-empty" style={{ padding: 60 }}>Run the simulation to compare fairness under both policies.</div>
         ) : (
           <>
             <div className="stat-row">
-              <StatTile label="Gini · Nearest" value={equity.nearest.gini.toFixed(3)} desc="baseline inequality" kind="" />
+              <StatTile label="Gini · Nearest" value={equity.nearest.gini.toFixed(3)} desc="baseline" kind="" />
               <StatTile label="Gini · Donna" value={equity.donna.gini.toFixed(3)} desc={giniDelta(equity.nearest.gini, equity.donna.gini)} kind={equity.donna.gini < equity.nearest.gini ? 'win' : 'hot'} />
-              <StatTile label="Min/Max · Nearest" value={equity.nearest.minMaxRatio.toFixed(2)} desc="smallest ÷ largest share" kind="" />
+              <StatTile label="Min/Max · Nearest" value={equity.nearest.minMaxRatio.toFixed(2)} desc="smallest ÷ largest" kind="" />
               <StatTile label="Min/Max · Donna" value={equity.donna.minMaxRatio.toFixed(2)} desc={equity.donna.minMaxRatio > equity.nearest.minMaxRatio ? 'more balanced' : 'less balanced'} kind={equity.donna.minMaxRatio > equity.nearest.minMaxRatio ? 'win' : 'cool'} />
             </div>
 
             <div className="chart-card">
-              <h3>Inequality over time</h3>
-              <p className="csub">Gini coefficient after each drop — the gap is the fairness Donna buys.</p>
+              <h3>Inequality over time <span className="csub">Gini after each drop</span></h3>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={equity.series} margin={{ top: 8, right: 16, left: -6, bottom: 4 }}>
                   <CartesianGrid stroke="#1b2130" vertical={false} />
@@ -67,8 +59,7 @@ export function EquityTab() {
             </div>
 
             <div className="chart-card">
-              <h3>Cumulative pounds delivered per recipient</h3>
-              <p className="csub">Where {equity.drops} drops landed under each policy. Flatter across recipients = more equitable.</p>
+              <h3>Pounds delivered per recipient <span className="csub">flatter = more equitable</span></h3>
               <ResponsiveContainer width="100%" height={Math.max(280, barData.length * 26)}>
                 <BarChart data={barData} layout="vertical" margin={{ top: 8, right: 20, left: 8, bottom: 4 }}>
                   <CartesianGrid stroke="#1b2130" horizontal={false} />
@@ -100,7 +91,7 @@ function StatTile({ label, value, desc, kind }: { label: string; value: string; 
 
 function giniDelta(nearest: number, donna: number): string {
   const pct = nearest > 0 ? Math.round(((nearest - donna) / nearest) * 100) : 0;
-  if (donna < nearest) return `${pct}% fairer than nearest`;
+  if (donna < nearest) return `${pct}% fairer`;
   return 'no improvement';
 }
 

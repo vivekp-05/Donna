@@ -2,16 +2,40 @@ import type { Donation, DonationItem, Recipient, OfferDraft } from '../types.js'
 import type { LlmClient } from './llm.js';
 import { createLlm, extractJson } from './llm.js';
 import { buildTaskPrompt } from './protocol.js';
+import { firstName, fmtUrgency } from '../text/humanize.js';
+import { memoryHint } from './memoryHint.js';
 
+// UI_REDESIGN §D.3 — the offer script must sound like a person, not a database
+// row. Hard rules baked into the prompt AND the deterministic template:
+//   • ≤2 spoken sentences, warm phone register.
+//   • Greet the contact by first name.
+//   • Say what + how much + the spoilage urgency.
+//   • At MOST ONE short contextual clause from memory (already distilled for you
+//     in `memoryHint`) — never enumerate infrastructure / accepts / rejects.
+//   • Never print raw enum tokens (no underscores, no category codes).
+//   • End with the ask.
 const INSTRUCTIONS =
-  'You are Donna, drafting a short, warm phone script to offer a food donation to a ' +
-  'recipient agency. Reference the real item, quantity, freshness window, and pickup ' +
-  'location. Ask whether they can take it today. Return JSON: {"script": string, ' +
-  '"summary": string} where summary is one line.';
+  'You are Donna, leaving a short, warm spoken offer for a food-recipient contact. ' +
+  'Write AT MOST TWO sentences in natural speech. Greet the contact by their first ' +
+  'name, then say what the item is, roughly how much, and how soon it needs to move. ' +
+  'You may add ONE brief contextual nod ONLY if a memoryHint is provided — never list ' +
+  'their infrastructure, preferences, or rejected categories, and never write raw ' +
+  'codes or underscores. Finish by asking if they can take it today. ' +
+  'Return JSON: {"script": string, "summary": string} where summary is one short line.';
+
+interface OfferPayload {
+  itemName: string;
+  qtyLbs: number;
+  hoursToSpoil: number;
+  donorName: string;
+  recipientName: string;
+  contactFirstName: string;
+  memoryHint: string;
+}
 
 /**
  * Agent 2 — item + recipient → OfferDraft (§6). Degrades to a deterministic
- * template if the LLM output can't be parsed; never throws.
+ * humane template if the LLM output can't be parsed; never throws.
  */
 export async function draftOffer(
   item: DonationItem,
@@ -20,17 +44,20 @@ export async function draftOffer(
   memoryContext: string,
   llm: LlmClient = createLlm(),
 ): Promise<OfferDraft> {
-  const payload = {
+  // memoryContext arrives already distilled to a single humane clause from the
+  // caller; if empty (e.g. direct callers/tests), derive one from the recipient.
+  const hint = memoryContext && memoryContext.trim()
+    ? memoryContext.trim()
+    : memoryHint(recipient, item);
+
+  const payload: OfferPayload = {
     itemName: item.item,
     qtyLbs: item.qtyLbs,
-    category: item.category,
     hoursToSpoil: item.hoursToSpoil,
-    needsRefrigeration: item.needsRefrigeration,
     donorName: donation.donorName ?? '',
-    pickupLocation: donation.pickupLocation ?? '',
     recipientName: recipient.name,
-    recipientContact: recipient.leadContact,
-    memoryContext,
+    contactFirstName: firstName(recipient.leadContact) || recipient.name,
+    memoryHint: hint,
   };
 
   try {
@@ -54,29 +81,21 @@ export async function draftOffer(
   }
 }
 
-function templateScript(p: {
-  itemName: string;
-  qtyLbs: number;
-  category: string;
-  hoursToSpoil: number;
-  needsRefrigeration: boolean;
-  donorName: string;
-  pickupLocation: string;
-  recipientName: string;
-  recipientContact: string;
-}): string {
-  const parts: string[] = [];
-  parts.push(`Hi ${p.recipientContact || p.recipientName}, this is Donna calling on behalf of ${p.donorName || 'a local food donor'}.`);
-  parts.push(
-    `We have about ${p.qtyLbs} lbs of ${p.itemName} (${p.category.replace(/_/g, ' ')})` +
-      `${p.needsRefrigeration ? ', which needs refrigeration' : ''}` +
-      `${p.pickupLocation ? `, available for pickup at ${p.pickupLocation}` : ''}.`,
-  );
-  parts.push(`It should stay good for roughly ${p.hoursToSpoil} hours.`);
-  parts.push(`Could ${p.recipientName} take this today?`);
-  return parts.join(' ');
+/** Deterministic humane fallback — kept in lockstep with llmMock's mockOffer. */
+function templateScript(p: OfferPayload): string {
+  const greet = p.contactFirstName ? `Hi ${p.contactFirstName}` : 'Hi there';
+  const urgency = fmtUrgency(p.hoursToSpoil);
+  const first = `${greet}, I've got ${fmtLbs(p.qtyLbs)} of ${p.itemName} that needs to move ${urgency}.`;
+  const ask = p.memoryHint
+    ? `${p.memoryHint}, so could your team take it today?`
+    : 'Could your team take it today?';
+  return `${first} ${ask}`;
 }
 
-function templateSummary(p: { qtyLbs: number; itemName: string; recipientName: string }): string {
-  return `Offer ${p.qtyLbs} lbs of ${p.itemName} to ${p.recipientName}.`;
+function templateSummary(p: OfferPayload): string {
+  return `Offer ${fmtLbs(p.qtyLbs)} of ${p.itemName} to ${p.recipientName}.`;
+}
+
+function fmtLbs(n: number): string {
+  return `${n} lbs`;
 }

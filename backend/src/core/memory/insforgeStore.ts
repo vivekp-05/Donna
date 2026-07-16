@@ -86,10 +86,14 @@ export class InsforgeStore implements MemoryStore {
   }
 
   private async post<T extends object>(table: string, row: T): Promise<void> {
+    // InsForge records API is PostgREST-backed: an INSERT body is the row object
+    // itself (or an array of rows), NOT a {records:[...]} envelope. Verified
+    // empirically — the envelope 400s with PGRST204 ("Could not find the
+    // 'records' column"). Send the bare row.
     const res = await fetch(this.url(table), {
       method: 'POST',
       headers: this.headers(),
-      body: JSON.stringify({ records: [row] }),
+      body: JSON.stringify(row),
     });
     if (!res.ok) throw new Error(`InsForge POST ${table} failed: ${res.status}`);
   }

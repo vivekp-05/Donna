@@ -79,7 +79,7 @@ InsForge functions). **Tests:** vitest. **Frontend:** Vite + React 18 + TS,
 
 | Concern | Mock/sim (default, keyless) | Live (env-flipped) |
 |---|---|---|
-| LLM | `llmMock.ts` — deterministic | `LLM_PROVIDER=anthropic\|insforge` |
+| LLM | `llmMock.ts` — deterministic | `LLM_PROVIDER=anthropic\|insforge\|gemini` |
 | DB | `jsonStore.ts` (data/db.json) | `DB_PROVIDER=insforge` |
 | Voice calls | `simulator.ts` persona | `VOICE_PROVIDER=vapi` |
 | Donor callback delivery | rendered on screen | VAPI call / SMS |
@@ -264,7 +264,7 @@ keys; constructor throws only when actually selected without env.
 export interface LlmClient {
   complete(opts: { system?: string; prompt: string; json?: boolean }): Promise<string>;
 }
-export function createLlm(): LlmClient;  // env LLM_PROVIDER: 'mock'(default)|'anthropic'|'insforge'
+export function createLlm(): LlmClient;  // env LLM_PROVIDER: 'mock'(default)|'anthropic'|'insforge'|'gemini'
 export function extractJson<T>(raw: string): T;   // tolerant ```json / prose stripping
 ```
 
@@ -276,9 +276,20 @@ export function extractJson<T>(raw: string): T;   // tolerant ```json / prose st
   Mock manager understands the two canned demo phrases (§12) plus patterns:
   "got a new freezer/fridge", "only send/accepts X", "stop sending X".
 - `llmAnthropic.ts` — Messages API, `claude-opus-4-8` default, `ANTHROPIC_API_KEY`.
-- `llmOpenAICompat.ts` — POST `{base}/chat/completions` with Bearer; serves
-  InsForge AI (OpenRouter-compatible) via `INSFORGE_AI_BASE_URL` + `INSFORGE_AI_KEY`,
-  model from `INSFORGE_AI_MODEL` (default `anthropic/claude-sonnet-4.5`).
+- `llmOpenAICompat.ts` — POST `{base}/chat/completions` with Bearer; serves any
+  OpenAI-compatible endpoint. Default (no ctor options) = InsForge AI
+  (OpenRouter-compatible) via `INSFORGE_AI_BASE_URL` + `INSFORGE_AI_KEY`, model
+  from `INSFORGE_AI_MODEL` (default `anthropic/claude-sonnet-4.5`). With explicit
+  options it also serves **Gemini** (§D.1): `LLM_PROVIDER=gemini` points it at
+  `https://generativelanguage.googleapis.com/v1beta/openai` with `GEMINI_API_KEY`
+  and `GEMINI_MODEL` (default `gemini-2.5-flash`).
+
+Offer/callback copy is humane by contract (UI_REDESIGN §D.3): the `offer` script
+and donor callback are ≤2 spoken sentences, greet by first name, carry at most
+one distilled contextual clause, and NEVER recite a recipient's
+infrastructure/accepts/rejects or emit raw enum tokens. `core/text/humanize.ts`
+(`humanize()`) is the single util that renders any enum token as human copy and
+is used everywhere user-visible (scripts, manager replies, transcripts).
 
 **Agents 1/2/4/5** are thin functions over `LlmClient` with strict JSON prompts +
 `extractJson` + defensive fallbacks (a parse failure must degrade, never throw 500):
@@ -346,6 +357,7 @@ export async function rankItem(itemId, weightsOverride?, deps): Promise<RankedRe
 | `GET /api/health` | `{ ok, mode: {llm, db, voice} }` |
 | `POST /api/donations` | `{channel, contact, rawText}` → full `Donation` (parsed + items; each item pre-ranked: response shape `{donation, rankings: Record<itemId, RankedRecipient[]>}`) |
 | `GET /api/donations` / `GET /api/donations/:id` | list / one (same enriched shape for :id) |
+| `GET /api/calls` | flattened, newest-first `[{donationId, itemId, itemName, ...CallAttempt}]` derived from items' attempts (§D.5) |
 | `POST /api/donations/:id/dispatch` | `{}` → resolved `Donation` (runs full call loop + callback) |
 | `POST /api/items/:id/rank` | `{ weights? }` → `RankedRecipient[]` + `explanation: string` (live slider preview; does NOT persist weights) |
 | `GET /api/recipients` / `GET /api/recipients/:id` | recipients (+`history` on :id) |
@@ -353,20 +365,24 @@ export async function rankItem(itemId, weightsOverride?, deps): Promise<RankedRe
 | `POST /api/manager/chat` | `{message}` → `ManagerReply` |
 | `GET /api/equity/simulate?drops=30` | `EquitySimResult` |
 | `POST /api/demo/reset` | reseed store |
-| `POST /api/demo/canned` | loads canned scenario (§12): ingests it and returns the enriched donation — instant, works offline |
+| `POST /api/demo/canned` | loads canned scenario (§12): ingests it and returns the enriched donation — instant, works offline. ALWAYS uses the mock LLM path regardless of `LLM_PROVIDER` (stage insurance, §D.4) |
 | `POST /api/vapi/webhook` | live-mode webhook sink |
 
 Errors: JSON `{error: string}` + proper status; agent failures degrade to mock
-behavior with a `warnings: string[]` field rather than 5xx.
+behavior with a `warnings: string[]` field rather than 5xx. `POST /api/donations`
+runs the configured LLM provider under an 8s cap and degrades to the mock parser
+on timeout/error, surfacing a `warnings[]` entry (§D.4).
 
 ## 10. Config — `config.ts` + `.env.example`
 
 ```
-LLM_PROVIDER=mock            # mock | anthropic | insforge
+LLM_PROVIDER=mock            # mock | anthropic | insforge | gemini
 ANTHROPIC_API_KEY=
 INSFORGE_AI_BASE_URL=        # e.g. https://<project>.insforge.app/api/ai/v1
 INSFORGE_AI_KEY=
 INSFORGE_AI_MODEL=anthropic/claude-sonnet-4.5
+GEMINI_API_KEY=             # for LLM_PROVIDER=gemini
+GEMINI_MODEL=gemini-2.5-flash
 DB_PROVIDER=json             # json | insforge
 INSFORGE_BASE_URL=
 INSFORGE_API_KEY=
@@ -375,6 +391,15 @@ VAPI_API_KEY=
 VAPI_PHONE_NUMBER_ID=
 PORT=8787
 ```
+
+`config.ts` loads `backend/.env` at boot via Node's `process.loadEnvFile`
+(≥20.12) inside a try/catch — no new dependency, an absent file is fine, and
+**real environment variables always win** over file values (only unset vars are
+filled). The load is skipped under the test runner so vitest always sees the
+keyless mock default. `backend/scripts/vapi-check.ts` (`npx tsx
+scripts/vapi-check.ts`) is a read-only VAPI key validator (§D.6): it GETs
+`https://api.vapi.ai/phone-number` and prints status + phone-number ids; it never
+places a call.
 
 ## 11. Seed data — `seed/recipients.ts`
 

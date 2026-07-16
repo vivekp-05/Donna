@@ -8,6 +8,7 @@ import type {
 } from './core/types.js';
 import { createStore, type MemoryStore } from './core/memory/store.js';
 import { createLlm, type LlmClient } from './core/agents/llm.js';
+import { LlmMock } from './core/agents/llmMock.js';
 import { createVoice, type VoiceProvider } from './core/voice/caller.js';
 import {
   ingestDonation, dispatchDonation, rankItem, type PipelineDeps,
@@ -33,8 +34,47 @@ export interface ServerDeps {
   voice: VoiceProvider;
 }
 
+// §D.5 — a flattened call-log row: one per CallAttempt, tagged with its donation
+// and item so the client can render call logs as first-class DB records.
+export type CallLogEntry = {
+  donationId: string;
+  itemId: string;
+  itemName: string;
+} & DonationItem['attempts'][number];
+
 const errMsg = (e: unknown): string =>
   e instanceof Error ? e.message : String(e);
+
+// §D.4 — live-provider guard. Wraps a live LlmClient with an 8s timeout and a
+// graceful degrade to the deterministic mock on timeout/error, recording that a
+// degrade happened so the route can surface a warning. The mock default and the
+// canned demo never touch this path.
+const LIVE_LLM_TIMEOUT_MS = 8000;
+
+class DegradingLlm implements LlmClient {
+  degraded = false;
+  private readonly mock = new LlmMock();
+  constructor(private readonly inner: LlmClient, private readonly timeoutMs = LIVE_LLM_TIMEOUT_MS) {}
+
+  async complete(opts: { system?: string; prompt: string; json?: boolean }): Promise<string> {
+    try {
+      return await this.withTimeout(this.inner.complete(opts));
+    } catch {
+      this.degraded = true;
+      return this.mock.complete(opts);
+    }
+  }
+
+  private withTimeout(p: Promise<string>): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('LLM timeout')), this.timeoutMs);
+      p.then(
+        (v) => { clearTimeout(t); resolve(v); },
+        (e) => { clearTimeout(t); reject(e); },
+      );
+    });
+  }
+}
 
 // A resolver hands each route a fully-built PipelineDeps with a FRESH config
 // snapshot (so a PUT /api/config takes effect on the next request without a
@@ -121,15 +161,27 @@ function buildApp(resolve: Resolver): Hono {
     }
     try {
       const deps = await resolve();
+      // §D.4 — use the configured provider, but cap it at 8s and degrade to the
+      // mock on timeout/error so intake always resolves (surfaced via warnings).
+      const guard =
+        ENV.llmProvider === 'mock' ? undefined : new DegradingLlm(deps.llm);
+      const ingestDeps = guard ? { ...deps, llm: guard } : deps;
       const donation = await ingestDonation(
         {
           channel: (channel ?? 'web_form') as Donation['sourceChannel'],
           contact: typeof contact === 'string' ? contact : '',
           rawText,
         },
-        deps,
+        ingestDeps,
       );
-      return c.json(await enrich(donation, deps));
+      const enriched = await enrich(donation, deps);
+      if (guard?.degraded) {
+        enriched.warnings = [
+          ...(enriched.warnings ?? []),
+          `live LLM (${ENV.llmProvider}) timed out or failed; used the offline parser`,
+        ];
+      }
+      return c.json(enriched);
     } catch (e) {
       return c.json({ error: errMsg(e) }, 500);
     }
@@ -150,6 +202,33 @@ function buildApp(resolve: Resolver): Hono {
       const donation = await deps.store.getDonation(c.req.param('id'));
       if (!donation) return c.json({ error: 'donation not found' }, 404);
       return c.json(await enrich(donation, deps));
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- call log (§D.5) ----------------------------------------------------
+  // Flattened, newest-first list of every call attempt across all donations,
+  // derived from items' persisted attempts. Makes call logs first-class.
+  app.get('/api/calls', async (c) => {
+    try {
+      const { store } = await resolve();
+      const donations = await store.listDonations();
+      const calls: CallLogEntry[] = [];
+      for (const d of donations) {
+        for (const item of d.items) {
+          for (const attempt of item.attempts ?? []) {
+            calls.push({
+              donationId: d.id,
+              itemId: item.id,
+              itemName: item.item,
+              ...attempt,
+            });
+          }
+        }
+      }
+      calls.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)); // newest first
+      return c.json(calls);
     } catch (e) {
       return c.json({ error: errMsg(e) }, 500);
     }
@@ -295,15 +374,18 @@ function buildApp(resolve: Resolver): Hono {
   app.post('/api/demo/canned', async (c) => {
     try {
       const deps = await resolve();
+      // §D.4 — stage insurance: the canned demo ALWAYS parses via the mock LLM
+      // path regardless of LLM_PROVIDER, so it stays instant and offline.
+      const cannedDeps = { ...deps, llm: new LlmMock() };
       const donation = await ingestDonation(
         {
           channel: CANNED_SCENARIO.channel,
           contact: CANNED_SCENARIO.contact,
           rawText: CANNED_SCENARIO.rawText,
         },
-        deps,
+        cannedDeps,
       );
-      return c.json(await enrich(donation, deps));
+      return c.json(await enrich(donation, cannedDeps));
     } catch (e) {
       return c.json({ error: errMsg(e) }, 500);
     }
