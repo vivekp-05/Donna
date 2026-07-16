@@ -1,0 +1,87 @@
+// Typed fetch client matching ARCHITECTURE §9 exactly.
+// All calls hit the Vite dev proxy (/api → localhost:8787). No direct URLs.
+
+import type {
+  AgentConfig, Channel, Donation, EnrichedDonation, EquitySimResult,
+  HealthResponse, HistoryEvent, ManagerReply, RankResponse, RankedRecipient,
+  Recipient, Weights,
+} from './types';
+
+const BASE = '/api';
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(BASE + path, {
+    headers: { 'content-type': 'application/json' },
+    ...init,
+  });
+  const text = await res.text();
+  let body: any = undefined;
+  try { body = text ? JSON.parse(text) : undefined; } catch { body = text; }
+  if (!res.ok) {
+    const msg = (body && typeof body === 'object' && body.error) || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return body as T;
+}
+
+// Some routes may return either the enriched envelope or a bare Donation.
+// Normalize to the enriched shape so callers have one contract.
+function asEnriched(raw: any): EnrichedDonation {
+  if (raw && raw.donation) return raw as EnrichedDonation;
+  return { donation: raw as Donation, rankings: {} };
+}
+
+export const api = {
+  health: () => request<HealthResponse>('/health'),
+
+  ingest: (channel: Channel, contact: string, rawText: string) =>
+    request<any>('/donations', {
+      method: 'POST',
+      body: JSON.stringify({ channel, contact, rawText }),
+    }).then(asEnriched),
+
+  listDonations: () => request<Donation[]>('/donations'),
+
+  getDonation: (id: string) =>
+    request<any>(`/donations/${id}`).then(asEnriched),
+
+  dispatch: (id: string) =>
+    request<any>(`/donations/${id}/dispatch`, { method: 'POST', body: '{}' })
+      .then((raw) => (raw && raw.donation ? (raw.donation as Donation) : (raw as Donation))),
+
+  rank: (itemId: string, weights?: Weights) =>
+    request<any>(`/items/${itemId}/rank`, {
+      method: 'POST',
+      body: JSON.stringify(weights ? { weights } : {}),
+    }).then((raw): RankResponse => {
+      if (Array.isArray(raw)) return { rankings: raw as RankedRecipient[], explanation: '' };
+      return {
+        rankings: (raw.rankings ?? raw.ranked ?? []) as RankedRecipient[],
+        explanation: raw.explanation ?? '',
+        warnings: raw.warnings,
+      };
+    }),
+
+  listRecipients: () => request<Recipient[]>('/recipients'),
+
+  getRecipient: (id: string) =>
+    request<Recipient & { history?: HistoryEvent[] }>(`/recipients/${id}`),
+
+  getConfig: () => request<AgentConfig>('/config'),
+
+  putConfig: (patch: Partial<AgentConfig>) =>
+    request<AgentConfig>('/config', { method: 'PUT', body: JSON.stringify(patch) }),
+
+  managerChat: (message: string) =>
+    request<ManagerReply>('/manager/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+
+  equitySimulate: (drops = 30) =>
+    request<EquitySimResult>(`/equity/simulate?drops=${drops}`),
+
+  reset: () => request<any>('/demo/reset', { method: 'POST', body: '{}' }),
+
+  canned: () => request<any>('/demo/canned', { method: 'POST', body: '{}' }).then(asEnriched),
+};

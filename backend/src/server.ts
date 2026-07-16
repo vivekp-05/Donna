@@ -1,0 +1,380 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { serve } from '@hono/node-server';
+import { pathToFileURL } from 'node:url';
+import { ENV } from './config.js';
+import type {
+  Donation, DonationItem, RankedRecipient, Weights, AgentConfig,
+} from './core/types.js';
+import { createStore, type MemoryStore } from './core/memory/store.js';
+import { createLlm, type LlmClient } from './core/agents/llm.js';
+import { createVoice, type VoiceProvider } from './core/voice/caller.js';
+import {
+  ingestDonation, dispatchDonation, rankItem, type PipelineDeps,
+} from './core/pipeline.js';
+import { managerChat } from './core/agents/manager.js';
+import { explainRanking } from './core/scoring/explain.js';
+import { simulateAB } from './core/scoring/equity.js';
+import { parseWebhook } from './core/voice/vapi.js';
+import { CANNED_SCENARIO } from './seed/scenarios.js';
+
+// ---------------------------------------------------------------------------
+// Shared shapes returned by the HTTP layer (not domain types; contract §9).
+// ---------------------------------------------------------------------------
+export interface EnrichedDonation {
+  donation: Donation;
+  rankings: Record<string, RankedRecipient[]>;
+  warnings?: string[];
+}
+
+export interface ServerDeps {
+  store: MemoryStore;
+  llm: LlmClient;
+  voice: VoiceProvider;
+}
+
+const errMsg = (e: unknown): string =>
+  e instanceof Error ? e.message : String(e);
+
+// A resolver hands each route a fully-built PipelineDeps with a FRESH config
+// snapshot (so a PUT /api/config takes effect on the next request without a
+// server restart) and guarantees store.init() has run exactly once.
+type Resolver = () => Promise<PipelineDeps>;
+
+// ---------------------------------------------------------------------------
+// Route wiring — shared by the real app and test servers.
+// ---------------------------------------------------------------------------
+function buildApp(resolve: Resolver): Hono {
+  const app = new Hono();
+
+  app.use(
+    '/api/*',
+    cors({
+      origin: ['http://localhost:5173'],
+      allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+      allowHeaders: ['Content-Type', 'Authorization'],
+    }),
+  );
+
+  // ---- helpers ------------------------------------------------------------
+  const readBody = async (c: any): Promise<any> => {
+    try {
+      const raw = await c.req.text();
+      if (!raw) return {};
+      return JSON.parse(raw);
+    } catch {
+      return null; // signals malformed JSON
+    }
+  };
+
+  const findItem = async (
+    store: MemoryStore,
+    itemId: string,
+  ): Promise<{ item: DonationItem; donation: Donation } | null> => {
+    const donations = await store.listDonations();
+    for (const d of donations) {
+      const item = d.items.find((i) => i.id === itemId);
+      if (item) return { item, donation: d };
+    }
+    return null;
+  };
+
+  // Rank every item of a donation, degrading per-item failures into warnings.
+  const enrich = async (
+    donation: Donation,
+    deps: PipelineDeps,
+  ): Promise<EnrichedDonation> => {
+    const rankings: Record<string, RankedRecipient[]> = {};
+    const warnings: string[] = [];
+    for (const item of donation.items) {
+      try {
+        rankings[item.id] = await rankItem(item.id, undefined, deps);
+      } catch (e) {
+        rankings[item.id] = [];
+        warnings.push(`ranking failed for item ${item.id}: ${errMsg(e)}`);
+      }
+    }
+    const out: EnrichedDonation = { donation, rankings };
+    if (warnings.length) out.warnings = warnings;
+    return out;
+  };
+
+  // ---- health -------------------------------------------------------------
+  app.get('/api/health', (c) =>
+    c.json({
+      ok: true,
+      mode: {
+        llm: ENV.llmProvider,
+        db: ENV.dbProvider,
+        voice: ENV.voiceProvider,
+      },
+    }),
+  );
+
+  // ---- donations ----------------------------------------------------------
+  app.post('/api/donations', async (c) => {
+    const body = await readBody(c);
+    if (body === null) return c.json({ error: 'invalid JSON body' }, 400);
+    const { channel, contact, rawText } = body ?? {};
+    if (typeof rawText !== 'string' || rawText.trim() === '') {
+      return c.json({ error: 'rawText is required' }, 400);
+    }
+    try {
+      const deps = await resolve();
+      const donation = await ingestDonation(
+        {
+          channel: (channel ?? 'web_form') as Donation['sourceChannel'],
+          contact: typeof contact === 'string' ? contact : '',
+          rawText,
+        },
+        deps,
+      );
+      return c.json(await enrich(donation, deps));
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  app.get('/api/donations', async (c) => {
+    try {
+      const { store } = await resolve();
+      return c.json(await store.listDonations());
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  app.get('/api/donations/:id', async (c) => {
+    try {
+      const deps = await resolve();
+      const donation = await deps.store.getDonation(c.req.param('id'));
+      if (!donation) return c.json({ error: 'donation not found' }, 404);
+      return c.json(await enrich(donation, deps));
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // NOTE (PRD §10 human-confirm gate): the autopilot/confirm gate is enforced
+  // client-side only (DecisionPanel shows a confirm modal when autopilot is off).
+  // This endpoint runs the full call loop unconditionally and is NOT an enforced
+  // backend trust boundary — a direct API call bypasses the UI gate by design so
+  // the offline canned-demo e2e and demo script can dispatch with an empty body.
+  app.post('/api/donations/:id/dispatch', async (c) => {
+    const id = c.req.param('id');
+    try {
+      const deps = await resolve();
+      const existing = await deps.store.getDonation(id);
+      if (!existing) return c.json({ error: 'donation not found' }, 404);
+      const resolved = await dispatchDonation(id, deps);
+      return c.json(resolved);
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- item re-rank (live slider preview; never persists weights) ---------
+  app.post('/api/items/:id/rank', async (c) => {
+    const id = c.req.param('id');
+    const body = await readBody(c);
+    if (body === null) return c.json({ error: 'invalid JSON body' }, 400);
+    const weights: Weights | undefined =
+      body && typeof body.weights === 'object' && body.weights !== null
+        ? (body.weights as Weights)
+        : undefined;
+    try {
+      const deps = await resolve();
+      const found = await findItem(deps.store, id);
+      if (!found) return c.json({ error: 'item not found' }, 404);
+      const ranked = await rankItem(id, weights, deps);
+      const warnings: string[] = [];
+      let explanation = '';
+      try {
+        explanation = await explainRanking(found.item, ranked, deps.llm);
+      } catch (e) {
+        warnings.push(`explanation failed: ${errMsg(e)}`);
+      }
+      const out: { ranked: RankedRecipient[]; explanation: string; warnings?: string[] } =
+        { ranked, explanation };
+      if (warnings.length) out.warnings = warnings;
+      return c.json(out);
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- recipients ---------------------------------------------------------
+  app.get('/api/recipients', async (c) => {
+    try {
+      const { store } = await resolve();
+      return c.json(await store.listRecipients());
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  app.get('/api/recipients/:id', async (c) => {
+    const id = c.req.param('id');
+    try {
+      const { store } = await resolve();
+      const recipient = await store.getRecipient(id);
+      if (!recipient) return c.json({ error: 'recipient not found' }, 404);
+      const history = await store.listHistory(id);
+      return c.json({ recipient, history });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- config -------------------------------------------------------------
+  app.get('/api/config', async (c) => {
+    try {
+      const { store } = await resolve();
+      return c.json(await store.getConfig());
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  app.put('/api/config', async (c) => {
+    const body = await readBody(c);
+    if (body === null || typeof body !== 'object') {
+      return c.json({ error: 'invalid JSON body' }, 400);
+    }
+    try {
+      const { store } = await resolve();
+      const updated = await store.setConfig(body as Partial<AgentConfig>);
+      return c.json(updated);
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- manager chat -------------------------------------------------------
+  app.post('/api/manager/chat', async (c) => {
+    const body = await readBody(c);
+    if (body === null) return c.json({ error: 'invalid JSON body' }, 400);
+    const message = body?.message;
+    if (typeof message !== 'string' || message.trim() === '') {
+      return c.json({ error: 'message is required' }, 400);
+    }
+    try {
+      const { store, llm } = await resolve();
+      const reply = await managerChat(message, store, llm);
+      return c.json(reply);
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- equity simulation --------------------------------------------------
+  app.get('/api/equity/simulate', async (c) => {
+    const dropsRaw = c.req.query('drops');
+    const parsed = dropsRaw !== undefined ? Number.parseInt(dropsRaw, 10) : NaN;
+    const drops = Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+    try {
+      const { store } = await resolve();
+      const recipients = await store.listRecipients();
+      return c.json(simulateAB(recipients, drops));
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- demo controls ------------------------------------------------------
+  app.post('/api/demo/reset', async (c) => {
+    try {
+      const { store } = await resolve();
+      await store.reset();
+      return c.json({ ok: true });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  app.post('/api/demo/canned', async (c) => {
+    try {
+      const deps = await resolve();
+      const donation = await ingestDonation(
+        {
+          channel: CANNED_SCENARIO.channel,
+          contact: CANNED_SCENARIO.contact,
+          rawText: CANNED_SCENARIO.rawText,
+        },
+        deps,
+      );
+      return c.json(await enrich(donation, deps));
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- VAPI webhook sink (live mode only) ---------------------------------
+  app.post('/api/vapi/webhook', async (c) => {
+    if (ENV.voiceProvider !== 'vapi') {
+      return c.json({ ok: true, ignored: true });
+    }
+    const body = await readBody(c);
+    if (body === null) return c.json({ error: 'invalid JSON body' }, 400);
+    try {
+      const normalized = parseWebhook(body);
+      return c.json({ ok: true, normalized });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 400);
+    }
+  });
+
+  return app;
+}
+
+// ---------------------------------------------------------------------------
+// Test-friendly factory: inject stubbed singletons.
+// ---------------------------------------------------------------------------
+export function createServer(deps: ServerDeps): Hono {
+  let initP: Promise<void> | undefined;
+  const resolve: Resolver = async () => {
+    if (!initP) initP = Promise.resolve(deps.store.init());
+    await initP;
+    return { ...deps, config: await deps.store.getConfig() };
+  };
+  return buildApp(resolve);
+}
+
+// ---------------------------------------------------------------------------
+// Default app: real singletons built lazily from factories, init() once.
+// ---------------------------------------------------------------------------
+let singletons: ServerDeps | undefined;
+let realInitP: Promise<void> | undefined;
+
+function realResolve(): Promise<PipelineDeps> {
+  if (!singletons) {
+    singletons = { store: createStore(), llm: createLlm(), voice: createVoice() };
+  }
+  const s = singletons;
+  if (!realInitP) realInitP = Promise.resolve(s.store.init());
+  return realInitP.then(async () => ({
+    ...s,
+    config: await s.store.getConfig(),
+  }));
+}
+
+export const app = buildApp(realResolve);
+
+const isMain =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  // Construct singletons + store.init() BEFORE serving (contract §9).
+  realResolve()
+    .then(() => {
+      serve({ fetch: app.fetch, port: ENV.port }, (info) => {
+        // eslint-disable-next-line no-console
+        console.log(`Donna backend listening on http://localhost:${info.port}`);
+      });
+    })
+    .catch((e) => {
+      // eslint-disable-next-line no-console
+      console.error('Failed to start Donna backend:', errMsg(e));
+      process.exit(1);
+    });
+}

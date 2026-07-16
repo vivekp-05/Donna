@@ -1,0 +1,258 @@
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { api } from './api';
+import type {
+  AgentConfig, Channel, Donation, EnrichedDonation, EquitySimResult,
+  ManagerReply, Mode, RankResponse, RankedRecipient, Recipient, Weights,
+} from './types';
+
+export interface ChatMsg { role: 'user' | 'bot'; text: string; reply?: ManagerReply }
+
+interface Toast { text: string; error?: boolean }
+
+interface DonnaState {
+  mode: Mode | null;
+  recipients: Recipient[];
+  recipientsById: Record<string, Recipient>;
+  config: AgentConfig | null;
+  donations: Donation[];
+  current: EnrichedDonation | null;
+  selectedItemId: string | null;
+  selectedRecipientId: string | null;
+  liveRank: Record<string, RankResponse>;
+  equity: EquitySimResult | null;
+  chat: ChatMsg[];
+  appliedPatchCount: number;
+
+  busy: { init: boolean; ingest: boolean; dispatch: boolean; equity: boolean; chat: boolean };
+  toast: Toast | null;
+
+  activeRankings: RankedRecipient[];
+  activeExplanation: string;
+
+  ingest: (channel: Channel, contact: string, rawText: string) => Promise<void>;
+  loadCanned: () => Promise<void>;
+  selectDonation: (id: string) => Promise<void>;
+  selectItem: (id: string) => void;
+  selectRecipient: (id: string | null) => void;
+  dispatch: () => Promise<void>;
+  rerank: (itemId: string, weights: Weights) => Promise<void>;
+  updateConfig: (patch: Partial<AgentConfig>) => Promise<void>;
+  managerSend: (message: string) => Promise<void>;
+  runEquity: (drops?: number) => Promise<void>;
+  reset: () => Promise<void>;
+  pushToast: (text: string, error?: boolean) => void;
+}
+
+const Ctx = createContext<DonnaState | null>(null);
+
+export function useDonna(): DonnaState {
+  const v = useContext(Ctx);
+  if (!v) throw new Error('useDonna outside provider');
+  return v;
+}
+
+export function DonnaProvider({ children }: { children: React.ReactNode }) {
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [config, setConfig] = useState<AgentConfig | null>(null);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [current, setCurrent] = useState<EnrichedDonation | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
+  const [liveRank, setLiveRank] = useState<Record<string, RankResponse>>({});
+  const [equity, setEquity] = useState<EquitySimResult | null>(null);
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [appliedPatchCount, setAppliedPatchCount] = useState(0);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const [busy, setBusy] = useState({ init: true, ingest: false, dispatch: false, equity: false, chat: false });
+
+  const toastTimer = useRef<number | undefined>(undefined);
+  const pushToast = useCallback((text: string, error?: boolean) => {
+    setToast({ text, error });
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  const setBusyKey = (k: keyof typeof busy, v: boolean) => setBusy((b) => ({ ...b, [k]: v }));
+
+  const recipientsById = useMemo(() => {
+    const m: Record<string, Recipient> = {};
+    for (const r of recipients) m[r.id] = r;
+    return m;
+  }, [recipients]);
+
+  const refreshRecipients = useCallback(async () => {
+    try { setRecipients(await api.listRecipients()); } catch { /* ignore */ }
+  }, []);
+
+  const loadEnriched = useCallback((e: EnrichedDonation) => {
+    setCurrent(e);
+    setLiveRank({});
+    const firstItem = e.donation.items[0];
+    setSelectedItemId(firstItem ? firstItem.id : null);
+    setSelectedRecipientId(null);
+  }, []);
+
+  // ---- init ----
+  useEffect(() => {
+    (async () => {
+      try {
+        const [h, recs, cfg, list] = await Promise.allSettled([
+          api.health(), api.listRecipients(), api.getConfig(), api.listDonations(),
+        ]);
+        if (h.status === 'fulfilled') setMode(h.value.mode);
+        if (recs.status === 'fulfilled') setRecipients(recs.value);
+        if (cfg.status === 'fulfilled') setConfig(cfg.value);
+        if (list.status === 'fulfilled') {
+          setDonations(list.value);
+          if (list.value.length) {
+            try { loadEnriched(await api.getDonation(list.value[list.value.length - 1].id)); } catch { /* */ }
+          }
+        }
+        if (h.status === 'rejected') {
+          pushToast('Backend offline — start donna-backend on :8787', true);
+        }
+      } finally {
+        setBusyKey('init', false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const refreshList = useCallback(async () => {
+    try { setDonations(await api.listDonations()); } catch { /* */ }
+  }, []);
+
+  const ingest = useCallback(async (channel: Channel, contact: string, rawText: string) => {
+    setBusyKey('ingest', true);
+    try {
+      const e = await api.ingest(channel, contact, rawText);
+      loadEnriched(e);
+      await refreshList();
+      pushToast(`Parsed ${e.donation.items.length} item(s)`);
+    } catch (err: any) {
+      pushToast(err.message || 'Ingest failed', true);
+    } finally { setBusyKey('ingest', false); }
+  }, [loadEnriched, refreshList, pushToast]);
+
+  const loadCanned = useCallback(async () => {
+    setBusyKey('ingest', true);
+    try {
+      const e = await api.canned();
+      loadEnriched(e);
+      await refreshList();
+      pushToast('Canned scenario loaded');
+    } catch (err: any) {
+      pushToast(err.message || 'Canned load failed', true);
+    } finally { setBusyKey('ingest', false); }
+  }, [loadEnriched, refreshList, pushToast]);
+
+  const selectDonation = useCallback(async (id: string) => {
+    try { loadEnriched(await api.getDonation(id)); } catch (err: any) { pushToast(err.message, true); }
+  }, [loadEnriched, pushToast]);
+
+  const selectItem = useCallback((id: string) => {
+    setSelectedItemId(id);
+    setSelectedRecipientId(null);
+  }, []);
+
+  const selectRecipient = useCallback((id: string | null) => setSelectedRecipientId(id), []);
+
+  const dispatch = useCallback(async () => {
+    if (!current) return;
+    setBusyKey('dispatch', true);
+    try {
+      await api.dispatch(current.donation.id);
+      // re-fetch enriched to pick up attempts + donorMessage while keeping rankings
+      const e = await api.getDonation(current.donation.id);
+      setCurrent((prev) => ({
+        donation: e.donation,
+        rankings: Object.keys(e.rankings || {}).length ? e.rankings : (prev?.rankings ?? {}),
+      }));
+      await Promise.all([refreshList(), refreshRecipients()]);
+      pushToast('Dispatch complete — donor notified');
+    } catch (err: any) {
+      pushToast(err.message || 'Dispatch failed', true);
+    } finally { setBusyKey('dispatch', false); }
+  }, [current, refreshList, refreshRecipients, pushToast]);
+
+  const rerank = useCallback(async (itemId: string, weights: Weights) => {
+    try {
+      const r = await api.rank(itemId, weights);
+      setLiveRank((m) => ({ ...m, [itemId]: r }));
+    } catch (err: any) {
+      pushToast(err.message || 'Re-rank failed', true);
+    }
+  }, [pushToast]);
+
+  const updateConfig = useCallback(async (patch: Partial<AgentConfig>) => {
+    try {
+      const cfg = await api.putConfig(patch);
+      setConfig(cfg);
+    } catch (err: any) { pushToast(err.message || 'Config update failed', true); }
+  }, [pushToast]);
+
+  const managerSend = useCallback(async (message: string) => {
+    setChat((c) => [...c, { role: 'user', text: message }]);
+    setBusyKey('chat', true);
+    try {
+      const reply = await api.managerChat(message);
+      setChat((c) => [...c, { role: 'bot', text: reply.reply, reply }]);
+      if (reply.applied && reply.patches.length) {
+        setAppliedPatchCount((n) => n + reply.patches.length);
+        await Promise.all([refreshRecipients(), (async () => {
+          try { setConfig(await api.getConfig()); } catch { /* */ }
+        })()]);
+        // re-rank current item so the board reflects the change
+        if (selectedItemId) {
+          const w = config?.weights;
+          try { const r = await api.rank(selectedItemId, w); setLiveRank((m) => ({ ...m, [selectedItemId]: r })); } catch { /* */ }
+        }
+      }
+    } catch (err: any) {
+      setChat((c) => [...c, { role: 'bot', text: `Sorry — ${err.message || 'that failed'}.` }]);
+    } finally { setBusyKey('chat', false); }
+  }, [refreshRecipients, selectedItemId, config, pushToast]);
+
+  const runEquity = useCallback(async (drops = 30) => {
+    setBusyKey('equity', true);
+    try { setEquity(await api.equitySimulate(drops)); }
+    catch (err: any) { pushToast(err.message || 'Simulation failed', true); }
+    finally { setBusyKey('equity', false); }
+  }, [pushToast]);
+
+  const reset = useCallback(async () => {
+    setBusyKey('init', true);
+    try {
+      await api.reset();
+      setCurrent(null); setLiveRank({}); setEquity(null); setChat([]); setAppliedPatchCount(0);
+      setSelectedItemId(null); setSelectedRecipientId(null);
+      await Promise.all([refreshRecipients(), refreshList(), (async () => {
+        try { setConfig(await api.getConfig()); } catch { /* */ }
+      })()]);
+      pushToast('Demo reset');
+    } catch (err: any) { pushToast(err.message || 'Reset failed', true); }
+    finally { setBusyKey('init', false); }
+  }, [refreshRecipients, refreshList, pushToast]);
+
+  const activeRankings = useMemo<RankedRecipient[]>(() => {
+    if (!selectedItemId) return [];
+    if (liveRank[selectedItemId]) return liveRank[selectedItemId].rankings;
+    return current?.rankings[selectedItemId] ?? [];
+  }, [selectedItemId, liveRank, current]);
+
+  const activeExplanation = useMemo<string>(() => {
+    if (selectedItemId && liveRank[selectedItemId]) return liveRank[selectedItemId].explanation;
+    return '';
+  }, [selectedItemId, liveRank]);
+
+  const value: DonnaState = {
+    mode, recipients, recipientsById, config, donations, current,
+    selectedItemId, selectedRecipientId, liveRank, equity, chat, appliedPatchCount,
+    busy, toast, activeRankings, activeExplanation,
+    ingest, loadCanned, selectDonation, selectItem, selectRecipient, dispatch,
+    rerank, updateConfig, managerSend, runEquity, reset, pushToast,
+  };
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
