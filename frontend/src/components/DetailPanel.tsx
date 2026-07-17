@@ -59,6 +59,9 @@ export function DetailPanel() {
   return (
     <aside className="detail">
       <div className="detail-scroll">
+        {/* §G — back control returns the right dock to the Network directory (as ✕) */}
+        <button className="ob-back" onClick={closeDetail}>← Network</button>
+
         {/* 1 — item strip */}
         <div className="istrip">
           <span className={`sdot ${statusClass(item)}`} />

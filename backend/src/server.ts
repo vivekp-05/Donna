@@ -11,8 +11,11 @@ import { createLlm, type LlmClient } from './core/agents/llm.js';
 import { LlmMock } from './core/agents/llmMock.js';
 import { createVoice, type VoiceProvider } from './core/voice/caller.js';
 import {
-  ingestDonation, dispatchDonation, rankItem, type PipelineDeps,
+  ingestDonation, dispatchDonation, rankItem,
+  directedCall, manualCall,
+  type PipelineDeps, type DirectedCallError, type ManualCallInput,
 } from './core/pipeline.js';
+import type { CallOutcome } from './core/types.js';
 import { managerChat } from './core/agents/manager.js';
 import { explainRanking } from './core/scoring/explain.js';
 import { simulateAB } from './core/scoring/equity.js';
@@ -297,6 +300,32 @@ function buildApp(resolve: Resolver): Hono {
     }
   });
 
+  // ---- directed / manual single-recipient calls (§G.3) --------------------
+  // Map the pipeline's discriminated error to the right HTTP status.
+  const directedStatus = (error: DirectedCallError): 404 | 409 =>
+    error === 'item_not_pending' ? 409 : 404;
+  const directedError: Record<DirectedCallError, string> = {
+    item_not_found: 'item not found',
+    recipient_not_found: 'recipient not found',
+    item_not_pending: 'item is not pending',
+  };
+
+  // §G.3.1 — directed agent call to a chosen recipient, bypassing ranking.
+  app.post('/api/items/:itemId/call/:recipientId', async (c) => {
+    const itemId = c.req.param('itemId');
+    const recipientId = c.req.param('recipientId');
+    try {
+      const deps = await resolve();
+      const result = await directedCall(itemId, recipientId, deps);
+      if (!result.ok) {
+        return c.json({ error: directedError[result.error] }, directedStatus(result.error));
+      }
+      return c.json({ item: result.item, attempt: result.attempt });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
   // ---- live call feed (stage dashboard) -----------------------------------
   // Who is on the phone right now, and what is being said. Buffered in memory
   // and polled; empty between calls.
@@ -306,6 +335,40 @@ function buildApp(resolve: Resolver): Hono {
 
   app.get('/api/live/:callId', (c) => {
     return c.json({ lines: getLiveTranscript(c.req.param('callId')) });
+  });
+
+  // §G.3.2 — human-logged manual call (recorded like an agent call, flagged manual).
+  app.post('/api/items/:itemId/manual/:recipientId', async (c) => {
+    const itemId = c.req.param('itemId');
+    const recipientId = c.req.param('recipientId');
+    const body = await readBody(c);
+    if (body === null || typeof body !== 'object') {
+      return c.json({ error: 'invalid JSON body' }, 400);
+    }
+    const outcome = (body as { outcome?: unknown }).outcome;
+    const validOutcomes: CallOutcome[] = ['accepted', 'declined', 'no_answer'];
+    if (typeof outcome !== 'string' || !validOutcomes.includes(outcome as CallOutcome)) {
+      return c.json({ error: 'outcome must be accepted, declined, or no_answer' }, 400);
+    }
+    const input: ManualCallInput = {
+      outcome: outcome as CallOutcome,
+      ...(typeof (body as { reason?: unknown }).reason === 'string'
+        ? { reason: (body as { reason: string }).reason }
+        : {}),
+      ...(typeof (body as { notes?: unknown }).notes === 'string'
+        ? { notes: (body as { notes: string }).notes }
+        : {}),
+    };
+    try {
+      const deps = await resolve();
+      const result = await manualCall(itemId, recipientId, input, deps);
+      if (!result.ok) {
+        return c.json({ error: directedError[result.error] }, directedStatus(result.error));
+      }
+      return c.json({ item: result.item, attempt: result.attempt });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
   });
 
   // ---- item re-rank (live slider preview; never persists weights) ---------
