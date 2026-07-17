@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { InventoryEntry } from '../types';
 import { humanize } from '../theme';
@@ -8,24 +8,28 @@ import { humanize } from '../theme';
  * call"), and to the gate only.
  *
  * Two surfaces stacked bottom-right: what is already on the food bank's shelf,
- * and a line to Donna. Both exist to inform ONE decision — approve, hold, or
- * reject — so both mount when the gate opens and unmount when it closes. The
- * caller renders <GateAside> under `phase === 'gate'` and nothing else; there is
- * no internal visibility flag to get out of step with the rail.
+ * and a one-click way to put this donation there. Both exist to inform ONE
+ * decision — approve, hold, or reject — so both mount when the gate opens and
+ * unmount when it closes. The caller renders <GateAside> under `phase === 'gate'`
+ * and nothing else; there is no internal visibility flag to get out of step with
+ * the rail.
  *
  * The right side is free at the gate: `.stage-panel.outbound` (same edge) only
  * appears from stage 06 onward, so the column never has to fight it for space.
  * That is also why it may sit at the bottom edge — see styles.css `.gaside`.
  */
-export function GateAside({ holdSeq = 0, onSend }: {
+export function GateAside({ holdSeq = 0, pendingCount = 0, onAdd }: {
   /** Bumped by the parent each time an item is held, to refetch the shelf. */
   holdSeq?: number;
-  onSend?: (text: string) => Promise<string>;
+  /** Pending items on this donation that "Add to inventory" would shelve. */
+  pendingCount?: number;
+  /** Shelve every pending item on the staged donation, then advance the flow. */
+  onAdd?: () => void | Promise<void>;
 }) {
   return (
     <aside className="gaside">
       <InventoryCard holdSeq={holdSeq} />
-      <GateChat onSend={onSend} />
+      <AddToInventoryCard pendingCount={pendingCount} onAdd={onAdd} />
     </aside>
   );
 }
@@ -95,86 +99,56 @@ function InventoryCard({ holdSeq }: { holdSeq: number }) {
   );
 }
 
-/* -------------------------------------------------------------------- chat */
-
-type Msg = { who: 'you' | 'donna'; text: string };
+/* --------------------------------------------------------------- add action */
 
 /**
- * A line to Donna at the gate, for the question the three buttons can't answer.
+ * §M.2 — take this whole donation onto the shelf in one click.
  *
- * DELIBERATELY NOT WIRED to a model yet. `onSend` is the seam: give it a
- * function and this becomes a real conversation. Left unwired it answers with a
- * fixed placeholder, which is honest about being a placeholder rather than
- * pretending to think.
- *
- * When it is wired, note that /api/manager/chat is NOT the endpoint to reach for
- * even though it is right there and Gemini-backed: it is the manager agent, and
- * it MUTATES CONFIG — it answers "stop calling Bayview for dairy" by editing
- * that recipient's rejects. A coordinator typing a question into a gate they are
- * mid-decision on does not expect the scoring weights to move underneath them.
- * This wants its own read-only endpoint over the staged donation.
+ * The per-item "Add to inventory" buttons on the verdict cards shelve one item
+ * at a time; this is the same action for the common case where the coordinator
+ * has decided the food bank keeps all of it. `onAdd` does the work (the parent
+ * owns the staged donation and the hold machinery) — this card only reflects how
+ * many items are still pending and whether a request is in flight.
  */
-function GateChat({ onSend }: { onSend?: (text: string) => Promise<string> }) {
-  const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [text, setText] = useState('');
+function AddToInventoryCard({ pendingCount, onAdd }: {
+  pendingCount: number;
+  onAdd?: () => void | Promise<void>;
+}) {
   const [busy, setBusy] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [msgs.length, busy]);
-
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    const q = text.trim();
-    if (!q || busy) return;
-    setText('');
-    setMsgs((m) => [...m, { who: 'you', text: q }]);
+  async function add() {
+    if (busy || pendingCount === 0 || !onAdd) return;
     setBusy(true);
+    setErr(null);
     try {
-      const reply = onSend
-        ? await onSend(q)
-        : "I'm not connected to a model yet — this is the chat surface only.";
-      setMsgs((m) => [...m, { who: 'donna', text: reply }]);
-    } catch (err) {
-      setMsgs((m) => [...m, {
-        who: 'donna',
-        text: `Something went wrong — ${err instanceof Error ? err.message : String(err)}`,
-      }]);
+      await onAdd();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="gcard chat">
+    <section className="gcard add">
       <header className="gc-head">
-        <span className="gc-title display-face">Ask Donna</span>
+        <span className="gc-title display-face">Add to inventory</span>
       </header>
-
-      {msgs.length > 0 && (
-        <div className="gchat-scroll" ref={scrollRef}>
-          {msgs.map((m, i) => (
-            <p key={i} className={`gmsg ${m.who}`}>{m.text}</p>
-          ))}
-          {busy && <p className="gmsg donna thinking">Thinking…</p>}
-        </div>
-      )}
-
-      <form className="gchat-row" onSubmit={(e) => void send(e)}>
-        <input
-          className="gchat-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ask about this donation…"
-          aria-label="Ask Donna about this donation"
-          disabled={busy}
-        />
-        <button className="btn-quiet gchat-send" type="submit" disabled={busy || !text.trim()}>
-          Send
-        </button>
-      </form>
+      <p className="gc-empty">
+        {pendingCount === 0
+          ? 'Every item on this donation is already held.'
+          : `Store ${pendingCount} item${pendingCount === 1 ? '' : 's'} from this donation on the food bank's shelf.`}
+      </p>
+      {err && <p className="gc-empty err">could not add — {err}</p>}
+      <button
+        className="btn-primary gadd-btn"
+        type="button"
+        onClick={() => void add()}
+        disabled={busy || pendingCount === 0}
+      >
+        {busy ? 'Adding…' : 'Add to inventory'}
+      </button>
     </section>
   );
 }

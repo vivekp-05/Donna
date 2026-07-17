@@ -776,34 +776,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .inv-sub { margin-top: 2px; font: 400 11px/1.35 var(--sans); color: var(--text-faint); }
 .inv-cold { color: var(--flow-store); }
 
-.gchat-scroll {
-  overflow-y: auto; min-height: 0; max-height: 180px;
-  display: flex; flex-direction: column; gap: 7px;
-  margin-bottom: 9px;
-}
-.gmsg {
-  margin: 0; max-width: 90%;
-  font: 400 12.5px/1.45 var(--sans);
-  padding: 7px 10px; border-radius: 9px;
-}
-.gmsg.you   { align-self: flex-end; background: var(--surface-3); border: 1px solid var(--border-2); border-bottom-right-radius: 3px; color: var(--text); }
-.gmsg.donna { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 3px; color: var(--text-dim); }
-.gmsg.thinking { color: var(--text-faint); font-style: italic; }
-
-.gchat-row { display: flex; gap: 7px; align-items: center; }
-.gchat-input {
-  flex: 1 1 auto; min-width: 0;
-  background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: var(--radius-s); color: var(--text);
-  font: 400 12.5px var(--sans); padding: 8px 10px;
-  transition: border-color 0.15s var(--ease);
-}
-.gchat-input::placeholder { color: var(--text-faint); }
-.gchat-input:focus { outline: none; border-color: var(--text-faint); }
-.gchat-input:disabled { opacity: 0.6; }
-.gchat-send { flex: 0 0 auto; padding: 8px 11px; font-size: 12px; }
-.gchat-send:disabled { opacity: 0.45; cursor: default; }
-.gchat-send:disabled:hover { color: var(--text-dim); border-color: var(--border); }
+/* The add-to-inventory action card sits under the shelf, same teal accent so the
+   card and the store route read as one idea. */
+.gcard.add { border-left: 2px solid var(--flow-store); }
+.gadd-btn { margin-top: 10px; width: 100%; }
+.gadd-btn:disabled { opacity: 0.45; cursor: default; }
+.gadd-btn:disabled:hover { background: var(--hot); }
 
 /* ---- top pipeline rail (§L.1) --------------------------------------------
    THE ONE SANCTIONED EXCEPTION to the §H no-glass/no-glow rule at the top of
