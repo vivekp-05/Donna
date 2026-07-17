@@ -117,6 +117,56 @@ function serverBlock() {
   };
 }
 
+/**
+ * Who Donna says she works for. Mirrors inbound.ts rather than importing from
+ * it: inbound.ts already imports IN_CALL_MODEL from here, and the reverse would
+ * close the cycle. Both read the same ENV, so they cannot disagree.
+ */
+const FOOD_BANK_NAME = ENV.foodBankName;
+
+/**
+ * Everything the assistant is allowed to state as fact, and what to do with the
+ * rest.
+ *
+ * Observed live 2026-07-16: asked where the produce came from, the model
+ * answered "a farm just outside Watsonville" — the donation record plainly said
+ * Golden State Produce, Dock 12. inbound.ts documented that failure alongside
+ * its own (inventing "Central City Food Bank" as an employer), diagnosed both
+ * as the same thing — an unanswerable question plus no instruction to decline
+ * produces a confident invention — and then fixed only the inbound half. This
+ * is the other half.
+ *
+ * It matters more here than inbound. Inbound invents at a donor who knows the
+ * truth and can correct it; outbound invents at a pantry deciding whether to
+ * feed the food to people, and sourcing and handling are food-safety facts.
+ *
+ * Note what this prompt does NOT do: give Donna the real provenance. She has no
+ * way to know it — buildAssistant receives (offer, recipient, item), and
+ * provenance lives on Donation (donorName/pickupLocation), which never reaches
+ * this file. Threading it through means changing the VoiceProvider interface,
+ * so for now the honest answer to "where's it from?" is "I'll check" rather
+ * than a plausible guess. Declining is a floor, not the ceiling.
+ */
+function outboundSystem(recipient: Recipient, item: DonationItem): string {
+  return (
+    `You are Donna, a food-rescue dispatcher for ${FOOD_BANK_NAME}, calling ${recipient.name}. ` +
+    `Offer them ${item.qtyLbs} lbs of ${item.item}` +
+    `${item.needsRefrigeration ? ' (needs refrigeration)' : ''}. ` +
+    'Your only goal is to secure a clear ACCEPT or DECLINE and, if declined, the reason. ' +
+    'Be brief and warm. When the recipient decides, confirm and end the call. ' +
+    'NEVER invent facts. The offer above is the whole of what you know about this food. ' +
+    'You do NOT know where it was grown or sourced, which farm, supplier or donor it came ' +
+    'from, how it has been stored or handled, who else was offered it, or when it would be ' +
+    'delivered. If you are asked any of that — or anything else you were not told — say you ' +
+    'do not have it in front of you and the team will follow up. Sourcing and handling are ' +
+    'food-safety facts and this pantry may feed this food to people: a confident wrong answer ' +
+    "can put someone at risk, so \"I'll check\" is always the better answer. " +
+    `You work for ${FOOD_BANK_NAME} and nothing else — never name a different organisation, ` +
+    'partner, or policy. If asked, you are an AI assistant — say so plainly and do not ' +
+    'pretend otherwise.'
+  );
+}
+
 function buildAssistant(offer: OfferDraft, recipient: Recipient, item: DonationItem) {
   return {
     ...serverBlock(),
@@ -126,17 +176,7 @@ function buildAssistant(offer: OfferDraft, recipient: Recipient, item: DonationI
     firstMessage: offer.script,
     model: {
       ...IN_CALL_MODEL,
-      messages: [
-        {
-          role: 'system',
-          content:
-            `You are Donna, a food-rescue dispatcher calling ${recipient.name}. ` +
-            `Offer them ${item.qtyLbs} lbs of ${item.item}` +
-            `${item.needsRefrigeration ? ' (needs refrigeration)' : ''}. ` +
-            `Your only goal is to secure a clear ACCEPT or DECLINE and, if declined, ` +
-            `the reason. Be brief and warm. When the recipient decides, confirm and end the call.`,
-        },
-      ],
+      messages: [{ role: 'system', content: outboundSystem(recipient, item) }],
     },
     voice: { provider: '11labs', voiceId: 'burt' },
   };
