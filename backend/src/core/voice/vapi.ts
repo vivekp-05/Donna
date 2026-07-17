@@ -1,5 +1,5 @@
 import type {
-  DonationItem, OfferDraft, Recipient, CallAttempt, CallOutcome,
+  Donation, DonationItem, OfferDraft, Recipient, CallAttempt, CallOutcome,
 } from '../types.js';
 import type { VoiceProvider } from './caller.js';
 import { ENV } from '../../config.js';
@@ -200,6 +200,67 @@ function dialTarget(recipient: Recipient): string {
   return override;
 }
 
+/**
+ * §M.1 — the number the DONOR gets called back on: whatever they rang in from.
+ *
+ * The override applies here exactly as it does to recipient calls, and for a
+ * stronger reason. `sourceContact` is whatever the inbound webhook read off
+ * `call.customer.number` — on the canned scenario it is seed text, not a real
+ * phone number at all. Honouring the override keeps a rejection demo from
+ * dialling a stranger.
+ */
+function dialDonor(donation: Donation): string {
+  const override = ENV.liveCallPhoneOverride;
+  if (!override) return donation.sourceContact;
+  console.warn(
+    `[vapi] LIVE_CALL_PHONE_OVERRIDE active — dialing ${override} ` +
+      `instead of the donor (${donation.sourceContact}).`,
+  );
+  return override;
+}
+
+/**
+ * What Donna may say when declining an offer.
+ *
+ * Same no-invention floor as outboundSystem, aimed at the mirror-image failure.
+ * There, an unanswerable question was about food she'd been told nothing about;
+ * here it is "why not?" — and the honest answer is that a coordinator made the
+ * call, which is the one fact this prompt actually carries. A model left to
+ * fill that silence will reach for a reason that sounds like a policy, and an
+ * invented policy ("we don't take dairy this week") is worse than no reason: the
+ * donor believes it, and stops offering dairy.
+ */
+function donorRejectSystem(donation: Donation): string {
+  const what = donation.items.map((i) => `${i.qtyLbs} lbs of ${i.item}`).join(', ');
+  return (
+    `You are Donna, a food-rescue dispatcher for ${FOOD_BANK_NAME}, calling ` +
+    `${donation.donorName ?? 'a donor'} back about the donation they offered: ${what}. ` +
+    'A coordinator at the food bank has reviewed it and decided we cannot take it this time. ' +
+    'Your only job is to let them know, kindly and briefly, thank them sincerely for thinking ' +
+    'of us, and encourage them to call again with future donations. Then end the call. ' +
+    'NEVER invent facts. You do NOT know WHY the coordinator declined — not capacity, not ' +
+    'timing, not quality, not policy. If asked why, say a coordinator reviewed it and the ' +
+    'team will follow up with the detail; do NOT guess at a reason. An invented reason ' +
+    'sounds like a policy, and a donor who believes it may never offer that food again. ' +
+    'Do not renegotiate, do not accept a partial load, and do not promise anyone will call ' +
+    "back at a specific time. You work for " + FOOD_BANK_NAME + ' and nothing else. ' +
+    'If asked, you are an AI assistant — say so plainly.'
+  );
+}
+
+function buildDonorAssistant(donation: Donation, script: string) {
+  return {
+    ...serverBlock(),
+    maxDurationSeconds: MAX_CALL_DURATION_S,
+    firstMessage: script,
+    model: {
+      ...IN_CALL_MODEL,
+      messages: [{ role: 'system', content: donorRejectSystem(donation) }],
+    },
+    voice: { provider: '11labs', voiceId: 'burt' },
+  };
+}
+
 export class VapiVoice implements VoiceProvider {
   /**
    * Place the call and return VAPI's call id. Returns as soon as the call is
@@ -245,6 +306,45 @@ export class VapiVoice implements VoiceProvider {
     const data = (await res.json()) as { id?: string };
     const callId = data.id;
     if (!callId) throw new Error('VAPI call response missing id');
+    return callId;
+  }
+
+  /**
+   * §M.1 — ring the donor back to decline their offer. Returns the call id once
+   * VAPI accepts it for dialling.
+   *
+   * Unlike startCall this places NO CallRecord: there is no shortlist to walk and
+   * no outcome to correlate, so the end-of-call-report has nothing to drive.
+   * rejectDonation resolves the donation up front rather than on the report —
+   * which is also what makes an unreachable donor harmless here (a recipient who
+   * doesn't answer must advance the machine; a donor who doesn't answer must not
+   * un-reject the donation).
+   */
+  async startDonorCall(donation: Donation, script: string): Promise<string> {
+    if (!ENV.vapiApiKey || !ENV.vapiPhoneNumberId) {
+      throw new Error('VAPI_API_KEY and VAPI_PHONE_NUMBER_ID are required for VOICE_PROVIDER=vapi');
+    }
+
+    const res = await fetch(`${VAPI_BASE}/call`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${ENV.vapiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phoneNumberId: ENV.vapiPhoneNumberId,
+        customer: { number: dialDonor(donation) },
+        assistant: buildDonorAssistant(donation, script),
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`VAPI donor call failed: ${res.status} ${await res.text()}`);
+    }
+
+    const data = (await res.json()) as { id?: string };
+    const callId = data.id;
+    if (!callId) throw new Error('VAPI donor call response missing id');
     return callId;
   }
 }

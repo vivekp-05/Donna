@@ -7,6 +7,7 @@ import type { DemoBus, DemoRoute } from '../demoBus';
 import { setDemoBus, resetDemoBus } from '../demoBus';
 import { FOOD_BANK, routeVia, verdictCopy, humanize } from '../theme';
 import { ChannelIcon, Phone, Mail, MessageSquare } from '../icons';
+import { GateAside } from './GateAside';
 
 /**
  * The Demo tab — a map-first stage with ONE set of visual panels (Inbound,
@@ -89,6 +90,8 @@ export function DemoStage(): React.JSX.Element {
   const [draft, setDraft] = useState<DraftView | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [startedCanned, setStartedCanned] = useState(false);
+  // §M.2 — bumped on each hold so the gate's inventory card refetches the shelf.
+  const [holdSeq, setHoldSeq] = useState(0);
   // How many item cards may reveal their PLACED / NO TAKERS outcome during the
   // replay. Cards derive status from REPLAY PROGRESS (§I.4 step 5) — an item stays
   // pending (verdict only) until its own call replay completes — NOT from the
@@ -349,9 +352,33 @@ export function DemoStage(): React.JSX.Element {
         },
       };
       setEnriched(patched);
+      setHoldSeq((n) => n + 1);   // the shelf changed — refetch it
       const pending = patched.donation.items.filter((i) => i.status === 'pending').length;
       if (pending === 0) void approveDispatch();
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  }
+
+  /**
+   * §M.1 — the gate's other exit: decline the offer and ring the donor back.
+   *
+   * Follows the donation like a live approve rather than replaying anything.
+   * There is nothing to re-enact — no shortlist was worked, and the one call this
+   * places is happening right now on a real phone — so the rail advances to 06
+   * off the polled `dispatching` status and rests there until the donor hangs up.
+   *
+   * Under simulator voice the backend has no donor to ring and comes straight
+   * back `resolved` (`calling: false`); the live driver picks that up and lands
+   * on the completed rail, so the offline demo still shows the whole shape.
+   */
+  async function rejectAtGate(id: string) {
+    setErr(null);
+    setFollowId(id);
+    try {
+      await api.reject(id);
+    } catch (e) {
+      setFollowId(null);   // never crossed the gate — stay on it rather than stranding at 06
+      setErr(e instanceof Error ? e.message : String(e));
+    }
   }
 
   async function resetStage() {
@@ -417,6 +444,7 @@ export function DemoStage(): React.JSX.Element {
         now={now}
         recipsById={recipsById}
         onApprove={approveLive}
+        onReject={rejectAtGate}
         onReset={() => void resetStage()}
         err={err}
       />
@@ -441,6 +469,11 @@ export function DemoStage(): React.JSX.Element {
       {showInbound && donation && (
         <InboundPanel donation={donation} lines={inboundLines} />
       )}
+
+      {/* §M.2 — the gate's right-hand column (inventory + chat). Mounted on the
+          gate and nowhere else, so it leaves of its own accord the moment the
+          rail advances to 06 and the outbound panel takes that edge back. */}
+      {phase === 'gate' && <GateAside holdSeq={holdSeq} />}
 
       {phase === 'calling' && call && <OutboundCallPanel call={call} />}
       {(phase === 'callback' || phase === 'done') && draft && donation && (
@@ -489,6 +522,15 @@ export function DemoStage(): React.JSX.Element {
             return (
               <>
                 <span className="muted">Held for review — nothing is called until you approve.</span>
+                {/* §M.1 — reject sits BESIDE approve, not behind a menu: the gate has two
+                    real answers and hiding one of them is how a coordinator ends up
+                    approving something they meant to decline. Quiet styling keeps the
+                    single accent on the forward path. */}
+                {donation && (
+                  <button className="btn-quiet" onClick={() => void rejectAtGate(donation.id)}>
+                    Reject donation
+                  </button>
+                )}
                 <button className="btn-primary" onClick={() => void approveDispatch()}>
                   Approve &amp; dispatch{anyHeld ? ` (${pending})` : ''}
                 </button>
@@ -708,10 +750,20 @@ function OutboundCallPanel({ call }: { call: CallView }) {
 
 /* --------------------------------------------------------------- draft */
 
-function DraftPanel({ donation, draft }: { donation: Donation; draft: DraftView }) {
+/**
+ * The Agent 5 callback to the supplier once a donation resolves.
+ *
+ * §M.1 — a REJECTED donation's donorMessage is not a draft: it is the script
+ * Donna already read to them down the phone. Same surface, but it must not claim
+ * to be an unsent text — "Ready to send" over words the donor heard ten seconds
+ * ago is the panel lying about what happened.
+ */
+function DraftPanel({ donation, draft, rejected = false }: {
+  donation: Donation; draft: DraftView; rejected?: boolean;
+}) {
   const channel = donation.sourceChannel;
-  const via = channel === 'email' ? 'via email' : 'via text';
-  const Glyph = channel === 'email' ? Mail : MessageSquare;
+  const via = rejected ? 'by phone' : channel === 'email' ? 'via email' : 'via text';
+  const Glyph = rejected ? Phone : channel === 'email' ? Mail : MessageSquare;
   if (draft.error) {
     return (
       <section className="stage-panel outbound">
@@ -723,7 +775,9 @@ function DraftPanel({ donation, draft }: { donation: Donation; draft: DraftView 
   return (
     <section className="stage-panel outbound">
       <header className="sp-head">
-        <span className="sp-title display-face">Outbound — draft to supplier</span>
+        <span className="sp-title display-face">
+          {rejected ? 'Outbound — declined to supplier' : 'Outbound — draft to supplier'}
+        </span>
       </header>
       <div className="sp-who">
         <Glyph size={14} />
@@ -731,15 +785,24 @@ function DraftPanel({ donation, draft }: { donation: Donation; draft: DraftView 
       </div>
       <div className="sp-sub draft-meta">{via} · {donation.sourceContact}</div>
       <div className="draft-body">{draft.text}</div>
-      <div className="draft-state">{draft.done ? 'Ready to send — delivered' : 'Composing…'}</div>
+      <div className="draft-state">
+        {rejected ? 'Delivered — Donna read this to them' : draft.done ? 'Ready to send — delivered' : 'Composing…'}
+      </div>
     </section>
   );
 }
 
 /* --------------------------------------------------------- verdict card */
 
-function VerdictCard({ item, resolved, onHold }: {
+function VerdictCard({ item, resolved, rejected = false, onHold }: {
   item: DonationItem; resolved: { ok: boolean; recipientName?: string } | null;
+  /**
+   * §M.1 — the donation was declined at the gate. Without this the card reads
+   * NO TAKERS on an item no one was ever asked about: `unplaceable` is the same
+   * status either way, and "nobody wanted it" is a very different thing to tell
+   * a coordinator than "you turned it down".
+   */
+  rejected?: boolean;
   onHold?: () => void;
 }) {
   const via = routeVia(item.hoursToSpoil);
@@ -753,6 +816,8 @@ function VerdictCard({ item, resolved, onHold }: {
       <div className="vc-mid">
         {held ? (
           <span className="status-tag held">IN INVENTORY</span>
+        ) : rejected ? (
+          <span className="status-tag unplaceable">DECLINED</span>
         ) : (
           <>
             <span className={`vc-verdict ${via}`}>{via === 'store' ? 'STORE' : 'DIRECT'}</span>
@@ -764,7 +829,13 @@ function VerdictCard({ item, resolved, onHold }: {
           </>
         )}
       </div>
-      <div className="vc-copy">{held ? 'held in inventory at the food bank' : verdictCopy(item)}</div>
+      <div className="vc-copy">
+        {held
+          ? 'held in inventory at the food bank'
+          : rejected
+            ? 'declined at the gate — never offered to a pantry'
+            : verdictCopy(item)}
+      </div>
       {resolved?.ok && resolved.recipientName && <div className="vc-dest">→ {resolved.recipientName}</div>}
       {onHold && (
         <button className="btn-quiet vc-hold" onClick={onHold}>Add to inventory</button>
@@ -778,14 +849,17 @@ function VerdictCard({ item, resolved, onHold }: {
 function SummaryChips({ donation }: { donation: Donation }) {
   const placed = donation.items.filter((i) => i.attempts.some((a) => a.outcome === 'accepted') || i.status === 'matched');
   const held = donation.items.filter((i) => i.status === 'held');
-  const unplaceable = donation.items.length - placed.length - held.length;
+  const leftover = donation.items.length - placed.length - held.length;
   const lbs = placed.reduce((s, i) => s + i.qtyLbs, 0);
+  // §M.1 — same distinction as the verdict card: on a rejected donation the
+  // leftover items were declined by a person, not turned down by every pantry.
+  const rejected = donation.rejected === true;
   return (
     <div className="summary-chips">
-      <span className="schip">{placed.length} placed</span>
+      {!rejected && <span className="schip">{placed.length} placed</span>}
       {held.length > 0 && <span className="schip inventory">{held.length} in inventory</span>}
-      <span className="schip">{unplaceable} unplaceable</span>
-      <span className="schip">{lbs.toLocaleString()} lbs moved</span>
+      <span className="schip">{leftover} {rejected ? 'declined' : 'unplaceable'}</span>
+      {!rejected && <span className="schip">{lbs.toLocaleString()} lbs moved</span>}
     </div>
   );
 }
@@ -922,7 +996,7 @@ function liveCallView(don: Donation, captions: Line[], now: number): CallView | 
  * on the line, captions only); it pops at awaiting_triage after hangup.
  */
 function LiveStage({
-  donation, captions, liveCall, now, recipsById, onApprove, onReset, err,
+  donation, captions, liveCall, now, recipsById, onApprove, onReject, onReset, err,
 }: {
   donation: Donation | null;
   captions: Line[];
@@ -931,6 +1005,7 @@ function LiveStage({
   now: number;
   recipsById: Record<string, Recipient>;
   onApprove: (id: string) => void;
+  onReject: (id: string) => void;
   onReset: () => void;
   err: string | null;
 }) {
@@ -949,11 +1024,15 @@ function LiveStage({
   const draftMsg = donation?.donorMessage?.trim() ?? '';
   const showDraft = phase === 'done' && draftMsg !== '' && !/^dispatch failed/i.test(draftMsg);
 
+  // §M.1 — a rejected donation is on the same rail but is not a dispatch, and
+  // saying so matters: at 06 the call is to the DONOR, not a pantry, and at the
+  // end nothing was dispatched at all.
+  const rejected = donation?.rejected === true;
   const phaseName =
     phase === 'inbound' ? 'Inbound call'
       : phase === 'gate' ? 'Human gate'
-        : phase === 'done' ? 'Dispatch complete'
-          : 'Calling recipients';
+        : phase === 'done' ? (rejected ? 'Donation rejected' : 'Dispatch complete')
+          : rejected ? 'Calling the donor back' : 'Calling recipients';
 
   return (
     <div className="stage">
@@ -963,9 +1042,15 @@ function LiveStage({
 
       <InboundPanel donation={inboundDon} lines={inboundLines} />
 
+      {phase === 'gate' && <GateAside />}
+
       {call && <OutboundCallPanel call={call} />}
       {showDraft && donation && (
-        <DraftPanel donation={donation} draft={{ done: true, text: draftMsg, error: false }} />
+        <DraftPanel
+          donation={donation}
+          draft={{ done: true, text: draftMsg, error: false }}
+          rejected={rejected}
+        />
       )}
 
       <div className="stage-strip">
@@ -974,7 +1059,12 @@ function LiveStage({
         {donation && donation.items.length > 0 && (
           <div className="vstrip">
             {donation.items.map((it) => (
-              <VerdictCard key={it.id} item={it} resolved={liveResolveItem(it)} />
+              <VerdictCard
+                key={it.id}
+                item={it}
+                resolved={liveResolveItem(it)}
+                rejected={rejected}
+              />
             ))}
           </div>
         )}
@@ -988,11 +1078,16 @@ function LiveStage({
           {phase === 'gate' && donation && (
             <>
               <span className="muted">Real inbound call — held for review.</span>
+              <button className="btn-quiet" onClick={() => onReject(donation.id)}>Reject donation</button>
               <button className="btn-primary" onClick={() => onApprove(donation.id)}>Approve &amp; dispatch</button>
             </>
           )}
           {phase === 'calling' && (
-            <span className="muted">Dispatching — Donna is working the list.</span>
+            <span className="muted">
+              {rejected
+                ? 'Calling the supplier back to decline the offer.'
+                : 'Dispatching — Donna is working the list.'}
+            </span>
           )}
           {phase === 'done' && (
             <button className="btn-quiet" onClick={onReset}>Reset</button>
