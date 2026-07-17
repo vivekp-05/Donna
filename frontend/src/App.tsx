@@ -7,8 +7,9 @@ import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
 import { EquityTab } from './components/EquityTab';
 import { ManagerDrawer } from './components/ManagerDrawer';
+import { DemoStage } from './components/DemoStage';
 
-type View = 'dispatch' | 'equity';
+type View = 'stage' | 'dispatch' | 'equity';
 
 export default function App(): React.JSX.Element {
   return (
@@ -20,7 +21,9 @@ export default function App(): React.JSX.Element {
 
 function Shell() {
   const { mode, reset, busy, toast, detailOpen, appliedPatchCount } = useDonna();
-  const [view, setView] = useState<View>('dispatch');
+  // Opens on the stage view: on demo night the first thing anyone should see is
+  // the narrative, not the console.
+  const [view, setView] = useState<View>('stage');
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [mgrOpen, setMgrOpen] = useState(false);
 
@@ -35,6 +38,7 @@ function Shell() {
       <header className="hbar">
         <span className="wordmark">Donna</span>
         <div className="seg">
+          <button className={`seg-btn${view === 'stage' ? ' on' : ''}`} onClick={() => setView('stage')}>Stage</button>
           <button className={`seg-btn${view === 'dispatch' ? ' on' : ''}`} onClick={() => setView('dispatch')}>Dispatch</button>
           <button className={`seg-btn${view === 'equity' ? ' on' : ''}`} onClick={() => setView('equity')}>Equity</button>
         </div>
@@ -46,14 +50,16 @@ function Shell() {
         <button className="icon-btn" onClick={reset} disabled={busy.init} title="Reset demo" aria-label="Reset demo">↻</button>
       </header>
 
-      {view === 'dispatch' ? (
+      {view === 'stage' && <DemoStage />}
+
+      {view === 'dispatch' && (
         <>
           <Feed onNew={() => setIntakeOpen(true)} />
           {detailOpen && <DetailPanel />}
         </>
-      ) : (
-        <EquityTab />
       )}
+
+      {view === 'equity' && <EquityTab />}
 
       {intakeOpen && <IntakeModal onClose={() => setIntakeOpen(false)} />}
 
