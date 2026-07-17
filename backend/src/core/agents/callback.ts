@@ -2,6 +2,7 @@ import type { Donation, DonationItem } from '../types.js';
 import type { LlmClient } from './llm.js';
 import { createLlm } from './llm.js';
 import { buildTaskPrompt } from './protocol.js';
+import { ENV } from '../../config.js';
 
 const INSTRUCTIONS =
   'You are Donna, composing a warm SMS-style callback to a food donor once their donation ' +
@@ -82,6 +83,44 @@ function template(donorName: string, items: CallbackItem[]): string {
   }
 
   return clampWords(lines.join(' '), 120);
+}
+
+/**
+ * §M.1 — Donna's opening line on the donor rejection call, and the message
+ * stamped on the donation as `donorMessage`.
+ *
+ * Deterministic, NOT model-written, unlike composeDonorMessage above. That one
+ * reports facts the donation already contains — what was placed, where, what
+ * wasn't — so a model has something true to work from and a template to fall
+ * back to. This one has exactly one fact (a coordinator said no) and the
+ * interesting part of the sentence is the part nobody knows: why. That is the
+ * shape of prompt that gets a plausible invented reason, and it would be spoken
+ * to the donor as the food bank's official position (see donorRejectSystem in
+ * vapi.ts, which spends its length forbidding precisely this). A warm fixed
+ * sentence is worth more here than a fluent guess.
+ *
+ * Held items are deliberately NOT mentioned: those were taken into inventory, so
+ * naming them inside a "we can't take this" call is a contradiction the donor
+ * has to untangle mid-sentence.
+ *
+ * Donna NAMES the food bank here, like every other line she speaks — it is a
+ * self-identification down a phone, the exact parallel of inbound.ts's "Thanks
+ * for calling ${FOOD_BANK_NAME} — this is Donna". This said "the food bank" flat
+ * until FOOD_BANK_NAME was fixed to a bare proper noun (#7); a donor who is being
+ * turned down deserves to know by whom. Note the string is interpolated WITHOUT a
+ * leading article, which is the whole reason that fix requires a proper noun.
+ */
+export function rejectionScript(donation: Donation): string {
+  const declined = donation.items.filter((i) => i.status !== 'held');
+  const what = declined.length
+    ? declined.map((i) => `${i.qtyLbs} lbs of ${i.item}`).join(' and ')
+    : 'your donation';
+  return (
+    `Hi, this is Donna calling from ${ENV.foodBankName} about the ${what} you offered — ` +
+    "thank you so much for thinking of us. I'm sorry to say a coordinator has reviewed it " +
+    "and we're not able to take it this time. We'd really appreciate you calling us again " +
+    'with future donations.'
+  );
 }
 
 function clampWords(text: string, max: number): string {

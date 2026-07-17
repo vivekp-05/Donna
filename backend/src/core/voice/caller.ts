@@ -1,5 +1,5 @@
 import type {
-  DonationItem, OfferDraft, Recipient, CallAttempt, HistoryEvent,
+  Donation, DonationItem, OfferDraft, Recipient, CallAttempt, HistoryEvent,
 } from '../types.js';
 import { ENV } from '../../config.js';
 import { SimulatorVoice } from './simulator.js';
@@ -23,6 +23,19 @@ import { VapiVoice } from './vapi.js';
  */
 export interface VoiceProvider {
   startCall(offer: OfferDraft, recipient: Recipient, item: DonationItem): Promise<string>;
+  /**
+   * §M.1 — call the DONOR back on the number they rang in from, to decline what
+   * they offered. Every other outbound call in the system goes to a Recipient
+   * off the ranked shortlist; this one goes to `donation.sourceContact` and has
+   * no recipient, no item shortlist and no accept/decline to extract — Donna is
+   * delivering a decision, not seeking one.
+   *
+   * Optional because only a provider that can dial an arbitrary number can honour
+   * it. The simulator has no donor to ring, so it omits this and rejectDonation
+   * resolves the donation without a call — the offline canned demo still works
+   * end to end, it just doesn't pretend a phone rang.
+   */
+  startDonorCall?(donation: Donation, script: string): Promise<string>;
   synthesizeReport?(
     offer: OfferDraft,
     recipient: Recipient,

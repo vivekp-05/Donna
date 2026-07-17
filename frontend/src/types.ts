@@ -23,6 +23,13 @@ export interface Donation {
   pickupLat?: number; pickupLng?: number;
   items: DonationItem[];
   donorMessage?: string;
+  // §M.1 — a coordinator declined this offer at the gate: no pantry was ever
+  // called, and the only call placed was the one telling the donor no.
+  rejected?: boolean;
+  // Set while the donor rejection call is ringing; cleared when it ends. Its
+  // presence is what holds the donation at `dispatching` (and the rail on
+  // "Outbound call") for the real duration of the call.
+  rejectCallId?: string;
 }
 export interface DonationItem {
   id: string; donationId: string;
@@ -123,6 +130,33 @@ export interface RankResponse {
   rankings: RankedRecipient[];
   explanation: string;
   warnings?: string[];
+}
+
+// ---- inventory (§M.2) ----
+// GET /api/inventory — what is on the food bank's shelf: every item a coordinator
+// held, across all donations, newest first. Mirrors backend InventoryEntry.
+export interface InventoryEntry {
+  itemId: string;
+  donationId: string;
+  item: string;
+  qtyLbs: number;
+  category: ItemCategory;
+  needsRefrigeration: boolean;
+  hoursToSpoil: number;
+  donorName?: string;
+  receivedAt: string;
+}
+export interface InventoryResponse { items: InventoryEntry[]; totalLbs: number }
+
+// §M.1 — POST /api/donations/:id/reject. `calling` is false when no donor call
+// was placed (simulator voice, or the call failed) — the donation is rejected
+// either way, and is already `resolved` rather than `dispatching`.
+export interface RejectResponse {
+  ok: boolean;
+  status: DonationStatus;
+  donationId: string;
+  calling: boolean;
+  donorMessage?: string;
 }
 
 // ---- live call feed (stage dashboard) ----

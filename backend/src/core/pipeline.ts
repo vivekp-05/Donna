@@ -6,7 +6,7 @@ import type { MemoryStore } from './memory/store.js';
 import type { LlmClient } from './agents/llm.js';
 import type { VoiceProvider } from './voice/caller.js';
 import { parseDonation } from './agents/intake.js';
-import { composeDonorMessage } from './agents/callback.js';
+import { composeDonorMessage, rejectionScript } from './agents/callback.js';
 import {
   startDispatch, onCallReport, type MachineDeps,
 } from './voice/dispatchMachine.js';
@@ -131,6 +131,154 @@ export async function holdItem(
   item.dialing = undefined;
   await deps.store.saveDonation(donation);
   return { ok: true, item };
+}
+
+// ---------------------------------------------------------------------------
+// §M.1 — reject at the gate. The mirror of approve: instead of working the
+// ranked shortlist, Donna rings the donor back on the number they called from
+// and declines the offer. Nothing is offered to any pantry.
+// ---------------------------------------------------------------------------
+export type RejectError = 'donation_not_found' | 'donation_not_rejectable';
+export type RejectResult =
+  | { ok: true; donation: Donation; calling: boolean }
+  | { ok: false; error: RejectError };
+
+/**
+ * Decline a donation and start the call telling the donor so.
+ *
+ * Returns as soon as the call is DIALLING, not when it ends (`calling: true`),
+ * leaving the donation at `dispatching` with `rejectCallId` set — the
+ * end-of-call-report resolves it. `calling: false` means no call was placed
+ * (simulator, or no donor call support) and the donation is already `resolved`.
+ *
+ * Held items are left alone: they are in the food bank's inventory, which is a
+ * decision already taken and not the one being reversed here. Only items still
+ * pending are declined.
+ *
+ * A failure to place the call still rejects the donation. The coordinator's
+ * decision is not contingent on the donor picking up, and leaving the donation
+ * at the gate because VAPI 500'd would put it back in front of the next person
+ * as if no one had decided.
+ */
+export async function rejectDonation(
+  donationId: string,
+  deps: Pick<PipelineDeps, 'store' | 'voice'>,
+): Promise<RejectResult> {
+  const donation = await deps.store.getDonation(donationId);
+  if (!donation) return { ok: false, error: 'donation_not_found' };
+  if (donation.status === 'dispatching' || donation.status === 'resolved') {
+    return { ok: false, error: 'donation_not_rejectable' };
+  }
+
+  for (const item of donation.items) {
+    if (item.status !== 'pending') continue;
+    item.status = 'unplaceable';
+    item.dialing = undefined;
+    item.resolutionReason = 'declined by a coordinator at the food bank';
+  }
+  donation.rejected = true;
+
+  const script = rejectionScript(donation);
+  donation.donorMessage = script;
+
+  // No donor-call support (the simulator): resolve now. The offline demo shows
+  // the rejection message without pretending a phone rang.
+  if (!deps.voice.startDonorCall) {
+    donation.status = 'resolved';
+    await deps.store.saveDonation(donation);
+    return { ok: true, donation, calling: false };
+  }
+
+  // Persist the decision BEFORE dialling. If the process dies between the two,
+  // the donation must already read as rejected — the alternative is a donor who
+  // has been told no by a database that still says the offer is open.
+  donation.status = 'dispatching';
+  await deps.store.saveDonation(donation);
+
+  try {
+    donation.rejectCallId = await deps.voice.startDonorCall(donation, script);
+    await deps.store.saveDonation(donation);
+    return { ok: true, donation, calling: true };
+  } catch (e) {
+    console.error('[reject] donor call failed:', e instanceof Error ? e.message : String(e));
+    donation.status = 'resolved';
+    donation.rejectCallId = undefined;
+    await deps.store.saveDonation(donation);
+    return { ok: true, donation, calling: false };
+  }
+}
+
+/**
+ * §M.1 — resolve a donation whose donor rejection call has ended.
+ *
+ * Called from the VAPI webhook for a report that matched no CallRecord: a donor
+ * call has none (nothing to correlate, no shortlist to advance). Returns whether
+ * this report belonged to a rejection call.
+ *
+ * Idempotent via the `dispatching` check — VAPI provably sends duplicate
+ * end-of-call-reports, and the second must be a no-op.
+ */
+export async function onRejectCallEnded(
+  callId: string,
+  deps: Pick<PipelineDeps, 'store'>,
+): Promise<boolean> {
+  const donations = await deps.store.listDonations();
+  const donation = donations.find((d) => d.rejectCallId === callId);
+  if (!donation) return false;
+  if (donation.status !== 'dispatching') return true;   // already resolved — duplicate report
+  donation.status = 'resolved';
+  donation.rejectCallId = undefined;
+  await deps.store.saveDonation(donation);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// §M.2 — the food bank's inventory: every item a coordinator has held.
+// ---------------------------------------------------------------------------
+export interface InventoryEntry {
+  itemId: string;
+  donationId: string;
+  item: string;
+  qtyLbs: number;
+  category: DonationItem['category'];
+  needsRefrigeration: boolean;
+  hoursToSpoil: number;
+  donorName?: string;
+  receivedAt: string;
+}
+
+/**
+ * Every held item across every donation, newest donation first.
+ *
+ * There is no inventory table to read: `held` is a status on a donation item
+ * (holdItem above), so the shelf is a projection over donations rather than a
+ * place. That is why this scans — the D1 store keeps donations as JSON documents,
+ * so item status is not a queryable column and no WHERE clause could do it. Fine
+ * at demo scale, and the honest shape of the data as it stands.
+ */
+export async function listInventory(
+  deps: Pick<PipelineDeps, 'store'>,
+): Promise<InventoryEntry[]> {
+  const donations = await deps.store.listDonations();
+  const out: InventoryEntry[] = [];
+  for (const d of donations) {
+    for (const item of d.items) {
+      if (item.status !== 'held') continue;
+      out.push({
+        itemId: item.id,
+        donationId: d.id,
+        item: item.item,
+        qtyLbs: item.qtyLbs,
+        category: item.category,
+        needsRefrigeration: item.needsRefrigeration,
+        hoursToSpoil: item.hoursToSpoil,
+        donorName: d.donorName,
+        receivedAt: d.receivedAt,
+      });
+    }
+  }
+  out.sort((a, b) => (a.receivedAt < b.receivedAt ? 1 : a.receivedAt > b.receivedAt ? -1 : 0));
+  return out;
 }
 
 /**

@@ -44,6 +44,27 @@ export interface Donation {
   items: DonationItem[];
   donorMessage?: string;            // Agent 5 output once resolved
   /**
+   * §M.1 — a coordinator declined this offer at the gate. The donation still
+   * resolves, but nothing was ever offered to a pantry: every pending item ends
+   * `unplaceable`, and the only call placed is the one telling the donor no.
+   *
+   * Distinct from a donation that merely failed to place: `unplaceable` items
+   * alone cannot tell those apart, and the difference matters to the donor (we
+   * tried and nobody wanted it vs. we didn't try).
+   */
+  rejected?: boolean;
+  /**
+   * The in-flight donor rejection call, while it rings.
+   *
+   * The rail has to sit on "Outbound call" for as long as the donor is actually
+   * on the phone, and startDonorCall returns the moment VAPI accepts the call for
+   * dialling — minutes before hangup. So the donation rests at `dispatching`
+   * with the call id here, and the end-of-call-report resolves it (server.ts).
+   * Cleared on resolve. Absent when the provider cannot place donor calls (sim),
+   * in which case the reject resolves immediately.
+   */
+  rejectCallId?: string;
+  /**
    * Which item the dispatch machine is currently working, once approved.
    *
    * Items are dispatched strictly one at a time. Nothing technical requires

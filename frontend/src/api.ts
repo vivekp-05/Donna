@@ -3,8 +3,9 @@
 
 import type {
   AgentConfig, CallLogEntry, Channel, DirectedCallResponse, Donation, DonationItem,
-  EnrichedDonation, HealthResponse, HistoryEvent, LiveLine, LiveResponse, ManagerReply,
-  ManualCallInput, RankResponse, RankedRecipient, Recipient, Weights,
+  EnrichedDonation, HealthResponse, HistoryEvent, InventoryResponse, LiveLine, LiveResponse,
+  ManagerReply, ManualCallInput, RankResponse, RankedRecipient, Recipient, RejectResponse,
+  Weights,
 } from './types';
 
 const BASE = '/api';
@@ -63,6 +64,19 @@ export const api = {
       `/donations/${id}/approve`,
       { method: 'POST', body: '{}' },
     ),
+
+  /**
+   * §M.1 — the other gate action: decline the offer and ring the donor back to
+   * tell them. Like approve, returns 202 immediately; the donation sits at
+   * `dispatching` while the donor is on the phone, so the caller follows it to
+   * `resolved` via the same poll.
+   */
+  reject: (id: string) =>
+    request<RejectResponse>(`/donations/${id}/reject`, { method: 'POST', body: '{}' }),
+
+  // §M.2 — what is on the food bank's shelf right now: every held item across
+  // all donations, newest first, plus the total weight.
+  inventory: () => request<InventoryResponse>('/inventory'),
 
   /** Calls on the phone right now, with transcripts as they are spoken. */
   live: () => request<LiveResponse>('/live'),

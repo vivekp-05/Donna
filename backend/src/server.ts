@@ -10,7 +10,7 @@ import { LlmMock } from './core/agents/llmMock.js';
 import type { VoiceProvider } from './core/voice/caller.js';
 import {
   ingestDonation, dispatchDonation, rankItem, machineDeps,
-  directedCall, manualCall, holdItem,
+  directedCall, manualCall, holdItem, rejectDonation, onRejectCallEnded, listInventory,
   type PipelineDeps, type DirectedCallError, type ManualCallInput,
 } from './core/pipeline.js';
 import type { CallOutcome } from './core/types.js';
@@ -304,6 +304,61 @@ export function buildApp(resolve: Resolver): Hono {
       }
 
       return c.json({ ok: true, status: 'dispatching', donationId: id }, 202);
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // §M.1 — the other half of the gate: decline the offer and ring the donor back
+  // to say so. Like /approve (and unlike /dispatch) this is the coordinator's
+  // decision point, so it returns 202 and lets the call run in the background —
+  // the donation rests at `dispatching` until the end-of-call-report lands, which
+  // is what keeps the dashboard's rail on "Outbound call" for the real duration.
+  //
+  // 404 unknown donation; 409 once it is already dispatching or resolved (a
+  // rejection after the pantries have been called is not a decision we can honour).
+  app.post('/api/donations/:id/reject', async (c) => {
+    const id = c.req.param('id');
+    try {
+      const deps = await resolve();
+      const result = await rejectDonation(id, deps);
+      if (!result.ok) {
+        return c.json(
+          {
+            error: result.error === 'donation_not_found'
+              ? 'donation not found'
+              : 'donation is already dispatching or resolved',
+          },
+          result.error === 'donation_not_found' ? 404 : 409,
+        );
+      }
+      return c.json(
+        {
+          ok: true,
+          status: result.donation.status,
+          donationId: id,
+          calling: result.calling,
+          donorMessage: result.donation.donorMessage,
+        },
+        202,
+      );
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
+
+  // ---- inventory (§M.2) ---------------------------------------------------
+  // What is on the food bank's shelf right now: every item a coordinator held
+  // (POST /api/items/:id/hold), across all donations. A projection, not a table
+  // — see listInventory.
+  app.get('/api/inventory', async (c) => {
+    try {
+      const deps = await resolve();
+      const items = await listInventory(deps);
+      return c.json({
+        items,
+        totalLbs: items.reduce((s, i) => s + i.qtyLbs, 0),
+      });
     } catch (e) {
       return c.json({ error: errMsg(e) }, 500);
     }
@@ -623,6 +678,17 @@ export function buildApp(resolve: Resolver): Hono {
     );
     if (matched) {
       return c.json({ ok: true, matched, callId: normalized.callId });
+    }
+
+    // §M.1 — a donor rejection call ending. It matches no CallRecord by design:
+    // there is no shortlist to advance and no accept/decline to extract, so the
+    // machine has nothing to drive. All that is left is to resolve the donation
+    // that has been sitting at `dispatching` while the donor was on the phone.
+    // Checked BEFORE the inbound branch below purely for cost — isInboundCall
+    // would reject it anyway (this call is outbound), but there is no reason to
+    // fall that far for a call we can identify here.
+    if (await onRejectCallEnded(normalized.callId, deps)) {
+      return c.json({ ok: true, rejected: true, callId: normalized.callId });
     }
 
     // Not one of our outbound calls — a donor called US. Parse what they said
