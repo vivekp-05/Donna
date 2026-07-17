@@ -152,6 +152,79 @@ describe('VapiVoice keyless behavior', () => {
     });
   });
 
+  /**
+   * The outbound assistant invented provenance live on 2026-07-16 ("a farm just
+   * outside Watsonville" against a record saying Golden State Produce, Dock 12).
+   * inbound.ts had already diagnosed the cause — an unanswerable question with no
+   * instruction to decline — and fixed only its own prompt. These assert the
+   * outbound half carries the same rules, since nothing else would catch its
+   * removal: the prompt is a string posted to VAPI and never otherwise read.
+   */
+  describe('outbound system prompt', () => {
+    const RECIPIENT = {
+      id: 'r1', name: 'Bayview Community Food Hub', type: 'pantry' as const,
+      leadContact: 'Denise Carter', phone: '+14155550101',
+      lat: 0, lng: 0, infrastructure: [], accepts: [], rejects: [],
+      typicalWeeklyVolumeLbs: 100, receivedRecentLbs: 0,
+    };
+    const OFFER = { itemId: 'i', recipientId: 'r1', script: 'Hi Denise — produce for you?', summary: 'x' };
+    const ITEM = {
+      id: 'i', donationId: 'd', item: 'strawberries', qtyLbs: 240,
+      category: 'fresh_produce' as const,
+      hoursToSpoil: 10, needsRefrigeration: true, status: 'pending' as const, attempts: [],
+    };
+
+    const saved = { ...ENV };
+    afterEach(() => {
+      Object.assign(ENV, saved);
+      vi.unstubAllGlobals();
+    });
+
+    /** Place a call against a stubbed VAPI and return the system prompt it posted. */
+    async function capturePrompt(): Promise<string> {
+      Object.assign(ENV, { vapiApiKey: 'k', vapiPhoneNumberId: 'p' });
+      let body: any;
+      vi.stubGlobal('fetch', async (_url: string, init: { body: string }) => {
+        body = JSON.parse(init.body);
+        return { ok: true, json: async () => ({ id: 'call_stub' }) } as unknown as Response;
+      });
+      await new VapiVoice().startCall(OFFER, RECIPIENT, ITEM);
+      return body.assistant.model.messages[0].content as string;
+    }
+
+    it('still states the offer it is calling about', async () => {
+      const p = await capturePrompt();
+      expect(p).toContain('Bayview Community Food Hub');
+      expect(p).toContain('240 lbs of strawberries');
+      expect(p).toContain('needs refrigeration');
+    });
+
+    it('forbids inventing facts and names sourcing as unknown', async () => {
+      const p = await capturePrompt();
+      expect(p).toContain('NEVER invent facts');
+      // The literal thing it invented: where the food came from.
+      expect(p).toMatch(/where it was grown or sourced/);
+      expect(p).toMatch(/farm, supplier or donor/);
+    });
+
+    it('tells Donna to defer rather than guess, and not to reassign her employer', async () => {
+      const p = await capturePrompt();
+      expect(p).toMatch(/do not have it in front of you/);
+      expect(p).toMatch(/never name a different organisation/);
+    });
+
+    it('discloses that Donna is an AI when asked', async () => {
+      const p = await capturePrompt();
+      expect(p).toMatch(/you are an AI assistant/);
+    });
+
+    it('uses the configured food bank, degrading to the honest generic when unset', async () => {
+      // FOOD_BANK_NAME resolves at module load, so this asserts the default the
+      // deployed Worker actually runs today: wrangler.toml sets FOOD_BANK_NAME="".
+      expect(await capturePrompt()).toContain('the food bank');
+    });
+  });
+
   it('startCall rejects clearly when keys are absent', async () => {
     // Zero env vars in the test process ⇒ placing a real call must error, not hang.
     const v = new VapiVoice();
