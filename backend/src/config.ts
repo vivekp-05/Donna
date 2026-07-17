@@ -56,6 +56,15 @@ export interface EnvConfig {
    * who finds a public tunnel URL can forge an "accepted" outcome.
    */
   vapiWebhookSecret: string;
+  /**
+   * The organisation Donna says she works for, on every call.
+   *
+   * Must be an organisation the operator actually runs — the assistant states it
+   * as fact to donors and pantries. Left unset it degrades to the generic "the
+   * food bank", which is honest; what it must never be is a real food bank you
+   * are not.
+   */
+  foodBankName: string;
   port: number;
 }
 
@@ -109,6 +118,7 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): EnvConfig {
     liveCallPhoneOverride: (env.LIVE_CALL_PHONE_OVERRIDE ?? '').trim(),
     publicWebhookUrl: (env.PUBLIC_WEBHOOK_URL ?? '').trim().replace(/\/+$/, ''),
     vapiWebhookSecret: (env.VAPI_WEBHOOK_SECRET ?? '').trim(),
+    foodBankName: (env.FOOD_BANK_NAME ?? '').trim() || 'the food bank',
     port: Number.parseInt(env.PORT ?? '8787', 10) || 8787,
   };
 }

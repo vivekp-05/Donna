@@ -29,6 +29,24 @@ const VAPI_BASE = 'https://api.vapi.ai';
 const MAX_CALL_DURATION_S = 300;
 
 /**
+ * The model that actually talks on the phone — VAPI's in-call ASR→LLM→TTS loop,
+ * NOT the backend LlmClient (that one is chosen by LLM_PROVIDER and does intake,
+ * offers, manager chat, and the donor callback).
+ *
+ * Google/Gemini rather than OpenAI: the pitch says Gemini, so the voice should
+ * be Gemini too, and it keeps every model in the system on one provider we hold
+ * the key for. Requires a `google` credential on the VAPI account (Gemini API
+ * key from AI Studio) — without it VAPI rejects the call, it does not fall back.
+ *
+ * Shared by both assistants so the inbound donor and the outbound pantry never
+ * end up on different models. `flash` because a phone call is latency-critical.
+ */
+export const IN_CALL_MODEL = {
+  provider: 'google',
+  model: 'gemini-2.5-flash',
+} as const;
+
+/**
  * Backstop for a report that never arrives at all (tunnel down, process
  * restarted mid-call, VAPI drops the webhook). It is NOT a conversation limit —
  * MAX_CALL_DURATION_S is. Deriving it from that ceiling plus a delivery buffer
@@ -106,8 +124,7 @@ function buildAssistant(offer: OfferDraft, recipient: Recipient, item: DonationI
     maxDurationSeconds: MAX_CALL_DURATION_S,
     firstMessage: offer.script,
     model: {
-      provider: 'openai',
-      model: 'gpt-4o',
+      ...IN_CALL_MODEL,
       messages: [
         {
           role: 'system',

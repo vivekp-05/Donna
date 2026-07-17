@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { createServer } from '../src/server.js';
 import { VapiVoice } from '../src/core/voice/vapi.js';
+import { buildInboundAssistant } from '../src/core/voice/inbound.js';
 import { ENV } from '../src/config.js';
 import type { MemoryStore } from '../src/core/memory/store.js';
 import type { CallAttempt } from '../src/core/types.js';
@@ -277,6 +278,26 @@ describe('assistant server block', () => {
       secret: 'shh',
     });
     expect(assistant.serverMessages).toEqual(['end-of-call-report']);
+  });
+
+  it('talks on Gemini, not OpenAI', async () => {
+    // The pitch says Gemini; the voice should be Gemini. Pinned because the
+    // provider is easy to change back by accident and the only place it shows
+    // up is on a live phone call.
+    Object.assign(ENV, {
+      vapiApiKey: 'k', vapiPhoneNumberId: 'p', publicWebhookUrl: 'https://abc.ngrok.io',
+    });
+    const assistant = await capturePostedAssistant();
+    expect(assistant.model.provider).toBe('google');
+    expect(assistant.model.model).toBe('gemini-2.5-flash');
+  });
+
+  it('uses the same in-call model for the inbound donor assistant', async () => {
+    // A donor and a pantry hearing different models would be a strange bug to
+    // find by ear.
+    const inbound = buildInboundAssistant();
+    expect(inbound.model.provider).toBe('google');
+    expect(inbound.model.model).toBe('gemini-2.5-flash');
   });
 
   it('caps call duration below our own report backstop', async () => {
