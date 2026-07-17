@@ -79,7 +79,6 @@ interface CallRow {
   candidate_index: number;
   placed_at: string;
   handled_at: string | null;
-  directed: number;
 }
 interface LiveRow { call_id: string; speaker: string; text: string }
 
@@ -111,9 +110,6 @@ function toCallRecord(row: CallRow): CallRecord {
     placedAt: row.placed_at,
   };
   if (row.handled_at !== null && row.handled_at !== undefined) c.handledAt = row.handled_at;
-  // Only set when true, so a record from D1 compares equal to the same record
-  // from JsonStore, where the field is simply absent on an automatic call.
-  if (row.directed === 1) c.directed = true;
   return c;
 }
 
@@ -305,8 +301,8 @@ export class D1Store implements MemoryStore {
     await this.db
       .prepare(
         'INSERT OR REPLACE INTO calls '
-        + '(call_id, donation_id, item_id, recipient_id, candidate_index, placed_at, handled_at, directed) '
-        + 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        + '(call_id, donation_id, item_id, recipient_id, candidate_index, placed_at, handled_at) '
+        + 'VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
       .bind(
         call.callId,
@@ -316,7 +312,6 @@ export class D1Store implements MemoryStore {
         call.candidateIndex,
         call.placedAt,
         call.handledAt ?? null,
-        call.directed ? 1 : 0,
       )
       .run();
   }
