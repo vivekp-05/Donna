@@ -1,4 +1,4 @@
-import type { CallRecord } from '../../src/core/types.js';
+import type { CallRecord, CallPhase, LiveCallRow } from '../../src/core/types.js';
 import type { MemoryStore } from '../../src/core/memory/store.js';
 
 type Speaker = 'agent' | 'recipient';
@@ -18,6 +18,7 @@ export type CallStoreParts = Pick<
   MemoryStore,
   | 'saveCall' | 'getCall' | 'claimCall' | 'listUnhandledCallsBefore'
   | 'appendLiveLine' | 'getLiveLines' | 'listLiveCalls' | 'clearLiveLines'
+  | 'setCallPhase'
 > & {
   /** The raw rows, exposed so tests can inspect or backdate `placedAt`. */
   calls: Map<string, CallRecord>;
@@ -26,6 +27,7 @@ export type CallStoreParts = Pick<
 export function makeCallStoreParts(): CallStoreParts {
   const calls = new Map<string, CallRecord>();
   const live = new Map<string, LiveLine[]>();
+  const phases = new Map<string, CallPhase>();
   return {
     calls,
     async saveCall(call) { calls.set(call.callId, { ...call }); },
@@ -51,12 +53,17 @@ export function makeCallStoreParts(): CallStoreParts {
       live.set(callId, lines);
     },
     async getLiveLines(callId) { return (live.get(callId) ?? []).map((l) => ({ ...l })); },
+    // Mirrors JsonStore/D1Store: a call is live if it has captions OR a phase.
     async listLiveCalls() {
-      return [...live.entries()].map(([callId, lines]) => ({
-        callId,
-        lines: lines.map((l) => ({ ...l })),
-      }));
+      const ids = new Set([...live.keys(), ...phases.keys()]);
+      return [...ids].map((callId) => {
+        const row: LiveCallRow = { callId, lines: (live.get(callId) ?? []).map((l) => ({ ...l })) };
+        const phase = phases.get(callId);
+        if (phase) row.phase = phase;
+        return row;
+      });
     },
-    async clearLiveLines(callId) { live.delete(callId); },
+    async setCallPhase(callId, phase) { phases.set(callId, phase); },
+    async clearLiveLines(callId) { live.delete(callId); phases.delete(callId); },
   };
 }

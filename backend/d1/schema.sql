@@ -127,3 +127,29 @@ CREATE TABLE IF NOT EXISTS live_lines (
   text    TEXT    NOT NULL,
   PRIMARY KEY (call_id, seq)
 );
+
+-- ---------------------------------------------------------------------------
+-- live_calls — what a live call is DOING right now (§L.2).
+--
+-- live_lines answers "what was said"; it cannot answer "is this call still up,
+-- or did it hang up and we're now parsing it?" Both look identical from the
+-- outside: rows present, no donation yet. The dashboard needs to tell those
+-- apart to show the intelligence stage honestly, so the phase is recorded here.
+--
+-- Phase belongs to the CALL, not to a line, hence its own table rather than a
+-- column on live_lines (which would repeat it per row and have no home before
+-- the first caption arrives).
+--
+--   on_call  — a human is on the line; captions are streaming.
+--   thinking — the call ended, we hold the full transcript, and the intake LLM
+--              is parsing it. Lives for the duration of one webhook request.
+--
+-- Cleared alongside live_lines the moment the donation exists. A row that
+-- outlives its call is cosmetic only: nothing reads it but the rail, and the
+-- next call for that id overwrites it.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS live_calls (
+  call_id    TEXT PRIMARY KEY,
+  phase      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);

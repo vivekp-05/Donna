@@ -1,5 +1,5 @@
 import type {
-  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord,
+  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord, CallPhase,
 } from '../types.js';
 import type { MemoryStore } from './store.js';
 import { ENV } from '../../config.js';
@@ -271,6 +271,10 @@ export class InsforgeStore implements MemoryStore {
 
   async clearLiveLines(_callId: string): Promise<void> {
     this.notImplemented('clearLiveLines');
+  }
+
+  async setCallPhase(_callId: string, _phase: CallPhase): Promise<void> {
+    this.notImplemented('setCallPhase');
   }
 }
 

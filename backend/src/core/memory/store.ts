@@ -1,5 +1,5 @@
 import type {
-  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord,
+  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord, CallPhase, LiveCallRow,
 } from '../types.js';
 import { ENV } from '../../config.js';
 import { JsonStore } from './jsonStore.js';
@@ -40,8 +40,10 @@ export interface MemoryStore {
   // ---- live transcript (ephemeral display data for a call in progress) -----
   appendLiveLine(callId: string, speaker: 'agent' | 'recipient', text: string): Promise<void>;
   getLiveLines(callId: string): Promise<Array<{ speaker: 'agent' | 'recipient'; text: string }>>;
-  listLiveCalls(): Promise<Array<{ callId: string; lines: Array<{ speaker: 'agent' | 'recipient'; text: string }> }>>;
+  listLiveCalls(): Promise<LiveCallRow[]>;
   clearLiveLines(callId: string): Promise<void>;
+  /** §L.2 — record what a live call is doing. Upsert; safe to call repeatedly. */
+  setCallPhase(callId: string, phase: CallPhase): Promise<void>;
 }
 
 /**

@@ -374,7 +374,10 @@ export function DemoStage(): React.JSX.Element {
   const liveDon = useMemo<Donation | null>(() => pickLiveDon(donations, followId), [donations, followId]);
   // Captions bound to the phase (§J.5): a real dispatch places one call at a time,
   // but if more than one live call exists, prefer the newest for the active panel.
-  const liveCaptions: Line[] = liveCalls.length ? (liveCalls[liveCalls.length - 1].lines ?? []) : [];
+  // The rail reads this same call's phase, so captions and stages can never
+  // disagree about which call they are describing.
+  const liveCall: LiveCall | undefined = liveCalls.length ? liveCalls[liveCalls.length - 1] : undefined;
+  const liveCaptions: Line[] = liveCall?.lines ?? [];
 
   // A canned REPLAY is the active driver while a canned run is going and we have NOT
   // handed off to the live driver (no followId). While it runs, the live driver must
@@ -410,6 +413,7 @@ export function DemoStage(): React.JSX.Element {
       <LiveStage
         donation={liveDon}
         captions={liveCaptions}
+        liveCall={liveCall}
         now={now}
         recipsById={recipsById}
         onApprove={approveLive}
@@ -432,7 +436,7 @@ export function DemoStage(): React.JSX.Element {
 
   return (
     <div className="stage">
-      {phase !== 'idle' && <PipelineRail index={railIndex(phase)} />}
+      {phase !== 'idle' && <PipelineRail states={railStatesFromIndex(railIndex(phase))} />}
 
       {showInbound && donation && (
         <InboundPanel donation={donation} lines={inboundLines} />
@@ -544,6 +548,8 @@ const RAIL: { key: string; n: string; label: string; live?: true; spin?: true }[
   { key: 'callback',     n: '07', label: 'Call donor back' },
 ];
 
+type RailState = 'idle' | 'act' | 'done';
+
 /** Rail position for the canned choreographer. -1 = idle, 7 = every stage done. */
 function railIndex(p: Phase): number {
   if (p === 'idle') return -1;
@@ -551,10 +557,61 @@ function railIndex(p: Phase): number {
   return RAIL.findIndex((r) => r.key === p);
 }
 
-function PipelineRail({ index }: { index: number }) {
-  // The bead sits at the leading edge of the ACTIVE capsule, so a completed run
-  // (index === RAIL.length) fills the track outright.
-  const pct = Math.max(0, Math.min(1, (index + 1) / RAIL.length)) * 100;
+/** The canned path is strictly sequential: one active stage, everything before it done. */
+function railStatesFromIndex(index: number): RailState[] {
+  return RAIL.map((_, i) => (i < index ? 'done' : i === index ? 'act' : 'idle'));
+}
+
+/**
+ * §L.2 — rail states for a REAL call, derived from server state only.
+ *
+ * The live path is NOT sequential, because the real world isn't: while someone
+ * is on the line, the call is in progress AND Deepgram is transcribing it, both
+ * genuinely at once. Forcing that into one active stage would mean lying about
+ * one of them, so two capsules light up together. That is the whole reason this
+ * takes a state per stage instead of an index.
+ *
+ * Every stage here is backed by something observable:
+ *   01 on_call                      — the call phase says a human is on the line
+ *   02 captions exist               — lines are arriving, i.e. STT is producing
+ *   03 phase 'thinking'             — the intake LLM is parsing, right now
+ *   04+ the donation row and status — as before
+ */
+function railStatesLive(
+  donation: Donation | null,
+  liveCall: LiveCall | undefined,
+): RailState[] {
+  const S: RailState[] = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle'];
+
+  if (!donation) {
+    // A live call with no phase is an older backend (or a call whose first
+    // caption hasn't landed): treat it as on_call rather than showing nothing.
+    if (liveCall?.phase === 'thinking') {
+      // Hung up, transcript in hand, LLM running. 01/02 are genuinely finished.
+      S[0] = 'done'; S[1] = 'done'; S[2] = 'act';
+      return S;
+    }
+    S[0] = 'act';                                          // on the line
+    if ((liveCall?.lines.length ?? 0) > 0) S[1] = 'act';   // …and transcribing
+    return S;
+  }
+
+  // The donation exists, so the call, the transcript and the parse are all done.
+  const upTo = (n: number) => { for (let i = 0; i < n; i++) S[i] = 'done'; };
+  switch (donation.status) {
+    case 'awaiting_triage': upTo(4); S[4] = 'act'; break;   // 05 human gate
+    case 'resolved':        upTo(7); break;                 // everything done
+    default:                upTo(5); S[5] = 'act'; break;   // 06 dispatching
+  }
+  return S;
+}
+
+function PipelineRail({ states }: { states: RailState[] }) {
+  // The bead sits at the leading edge of the furthest stage that has started —
+  // NOT at the single active one, which no longer exists on the live path where
+  // two stages can run at once.
+  const lastTouched = states.reduce((acc, s, i) => (s === 'idle' ? acc : i), -1);
+  const pct = Math.max(0, Math.min(1, (lastTouched + 1) / RAIL.length)) * 100;
   return (
     <div className="prail" role="group" aria-label="Dispatch pipeline">
       {/* prail-in is width:max-content so the track and the capsules share ONE
@@ -563,7 +620,7 @@ function PipelineRail({ index }: { index: number }) {
       <div className="prail-track"><div className="prail-fill" style={{ right: `${100 - pct}%` }} /></div>
       <div className="prail-row">
         {RAIL.map((r, i) => {
-          const state = i < index ? 'done' : i === index ? 'act' : 'idle';
+          const state = states[i] ?? 'idle';
           return (
             <div key={r.key} className={`pnode ${state}`} aria-current={state === 'act' ? 'step' : undefined}>
               <span className="pn-k">
@@ -865,10 +922,12 @@ function liveCallView(don: Donation, captions: Line[], now: number): CallView | 
  * on the line, captions only); it pops at awaiting_triage after hangup.
  */
 function LiveStage({
-  donation, captions, now, recipsById, onApprove, onReset, err,
+  donation, captions, liveCall, now, recipsById, onApprove, onReset, err,
 }: {
   donation: Donation | null;
   captions: Line[];
+  /** The call the panels are bound to — carries the phase the rail reads. */
+  liveCall: LiveCall | undefined;
   now: number;
   recipsById: Record<string, Recipient>;
   onApprove: (id: string) => void;
@@ -896,18 +955,11 @@ function LiveStage({
         : phase === 'done' ? 'Dispatch complete'
           : 'Calling recipients';
 
-  // §L.1 — the rail on the live path. A real call has no transcription or
-  // intelligence beat to observe (the work happens server-side between hangup
-  // and awaiting_triage), so those capsules are simply already done by the time
-  // a donation exists. Never fake a spinner over work that has already finished.
-  const railIdx = phase === 'inbound' ? 0
-    : phase === 'gate' ? 4
-      : phase === 'calling' ? 5
-        : RAIL.length;
-
   return (
     <div className="stage">
-      <PipelineRail index={railIdx} />
+      {/* §L.2 — every stage here is derived from server state, never from a
+          timer: the phone call and the LLM are the pacing. */}
+      <PipelineRail states={railStatesLive(donation, liveCall)} />
 
       <InboundPanel donation={inboundDon} lines={inboundLines} />
 

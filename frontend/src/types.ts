@@ -127,7 +127,14 @@ export interface RankResponse {
 
 // ---- live call feed (stage dashboard) ----
 export interface LiveLine { speaker: 'agent' | 'recipient'; text: string }
-export interface LiveCall { callId: string; lines: LiveLine[] }
+/**
+ * §L.2 — what a live call is DOING, as opposed to what was said on it.
+ * 'on_call': someone is on the line. 'thinking': hung up, intake LLM parsing.
+ * Optional because an older backend simply omits it — the rail degrades to
+ * treating a phase-less live call as 'on_call'.
+ */
+export type CallPhase = 'on_call' | 'thinking';
+export interface LiveCall { callId: string; lines: LiveLine[]; phase?: CallPhase }
 export interface LiveResponse { calls: LiveCall[] }
 
 export const TERM_KEYS = ['feasibility', 'coldchain', 'capacity', 'equity', 'prefs'] as const;
