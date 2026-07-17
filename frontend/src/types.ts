@@ -73,6 +73,14 @@ export interface CallAttempt {
   transcript: Array<{ speaker: 'agent' | 'recipient'; text: string }>;
   at: string; simulated: boolean;
 }
+// §D.5 / §F — one flattened call-log row per CallAttempt, tagged with its donation
+// and item. Mirrors backend/src/server.ts CallLogEntry (GET /api/calls, newest
+// first). Feeds the Outbound feed.
+export type CallLogEntry = {
+  donationId: string;
+  itemId: string;
+  itemName: string;
+} & CallAttempt;
 export interface ConfigPatch {
   op: 'set_accepts' | 'add_infrastructure' | 'remove_infrastructure'
     | 'set_rejects' | 'set_weights' | 'set_autopilot' | 'set_note' | 'set_volume';

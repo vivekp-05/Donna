@@ -127,3 +127,31 @@ caption line each.
   assert the new humane script shape — that's a legitimate spec change, not
   test-gaming; same for any snapshot-ish string assertions).
 - `tsc` + `vitest` + `vite build` green; canned e2e still <1s.
+
+## F. v1.2 — Inbound / Outbound split (user feedback)
+
+The two docks become directional. "Left shows inbound, right shows outbound."
+
+**Left dock (300px) — retitle "Inbound".** Content as today: DB-polled donation
+feed + "+ Donation" modal button. No other changes.
+
+**Right dock (340px) — new default view "Outbound".** Always mounted (no longer
+only-on-selection). A DB-first feed of everything Donna sends OUT, newest first:
+- **Call attempts** from `GET /api/calls` (polled every 3s, silent): one row per
+  attempt — status dot (green accepted / red declined / grey no-answer),
+  recipient name, item name, time. Click row → expand transcript inline
+  (one-at-a-time, as the detail activity list today).
+- **Donor callbacks** interleaved: derived client-side from resolved donations
+  with a `donorMessage` (timestamp = latest attempt `at` on that donation, else
+  `receivedAt`). Row: ✉ "To {donorName}" + first line; click → full message.
+- Empty state: one quiet line ("No outbound activity yet.").
+
+**Item detail becomes a swap, not a separate panel.** Clicking an item pill in
+Inbound swaps the right dock's content to the item Detail view (item strip,
+ranked rows, ⚙ tune, Dispatch, per-item activity — unchanged from §C). A
+"← Outbound" back control (and ✕) returns to the Outbound feed. After a
+dispatch, returning to Outbound shows the fresh attempts via the poll.
+
+Frontend-only change (plus `getCalls()` + `CallLogEntry` in the typed api
+client). §B design rules (one accent, ≤2-line rows, humanized copy) apply
+unchanged. tsc + vite build must stay green.

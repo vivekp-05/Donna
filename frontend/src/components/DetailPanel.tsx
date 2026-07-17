@@ -59,6 +59,9 @@ export function DetailPanel() {
   return (
     <aside className="detail">
       <div className="detail-scroll">
+        {/* §F — back control returns the right dock to the Outbound feed (as ✕) */}
+        <button className="ob-back" onClick={closeDetail}>← Outbound</button>
+
         {/* 1 — item strip */}
         <div className="istrip">
           <span className={`sdot ${statusClass(item)}`} />

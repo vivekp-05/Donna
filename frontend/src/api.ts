@@ -2,7 +2,7 @@
 // All calls hit the Vite dev proxy (/api → localhost:8787). No direct URLs.
 
 import type {
-  AgentConfig, Channel, Donation, EnrichedDonation, EquitySimResult,
+  AgentConfig, CallLogEntry, Channel, Donation, EnrichedDonation, EquitySimResult,
   HealthResponse, HistoryEvent, ManagerReply, RankResponse, RankedRecipient,
   Recipient, Weights,
 } from './types';
@@ -41,6 +41,9 @@ export const api = {
     }).then(asEnriched),
 
   listDonations: () => request<Donation[]>('/donations'),
+
+  // §D.5 / §F — flattened, newest-first call log for the Outbound feed.
+  getCalls: () => request<CallLogEntry[]>('/calls'),
 
   getDonation: (id: string) =>
     request<any>(`/donations/${id}`).then(asEnriched),

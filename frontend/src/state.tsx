@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api';
 import type {
-  AgentConfig, Channel, Donation, EnrichedDonation, EquitySimResult,
+  AgentConfig, CallLogEntry, Channel, Donation, EnrichedDonation, EquitySimResult,
   ManagerReply, Mode, RankResponse, RankedRecipient, Recipient, Weights,
 } from './types';
 
@@ -15,6 +15,7 @@ interface DonnaState {
   recipientsById: Record<string, Recipient>;
   config: AgentConfig | null;
   donations: Donation[];
+  calls: CallLogEntry[];
   current: EnrichedDonation | null;
   selectedItemId: string | null;
   selectedRecipientId: string | null;
@@ -57,6 +58,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [config, setConfig] = useState<AgentConfig | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [calls, setCalls] = useState<CallLogEntry[]>([]);
   const [current, setCurrent] = useState<EnrichedDonation | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
@@ -90,6 +92,11 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
     try { setDonations(await api.listDonations()); } catch { /* ignore */ }
   }, []);
 
+  // §F — the Outbound feed reads GET /api/calls (flattened attempts). Silent.
+  const refreshCalls = useCallback(async () => {
+    try { setCalls(await api.getCalls()); } catch { /* ignore */ }
+  }, []);
+
   // Fetch the ranking + explanation for one item (default/stored weights) so the
   // detail panel and map render from a fresh server rank. Silent on failure —
   // the pre-ranked enriched donation is the fallback.
@@ -104,13 +111,14 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const [h, recs, cfg, list] = await Promise.allSettled([
-          api.health(), api.listRecipients(), api.getConfig(), api.listDonations(),
+        const [h, recs, cfg, list, calls] = await Promise.allSettled([
+          api.health(), api.listRecipients(), api.getConfig(), api.listDonations(), api.getCalls(),
         ]);
         if (h.status === 'fulfilled') setMode(h.value.mode);
         if (recs.status === 'fulfilled') setRecipients(recs.value);
         if (cfg.status === 'fulfilled') setConfig(cfg.value);
         if (list.status === 'fulfilled') setDonations(list.value);
+        if (calls.status === 'fulfilled') setCalls(calls.value);
         if (h.status === 'rejected') pushToast('Backend offline — start donna-backend on :8787', true);
       } finally {
         setBusyKey('init', false);
@@ -120,10 +128,11 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ---- live feed: silent poll every 3s (no spinners after first load) ----
+  // Inbound (donations) + Outbound (calls) both refresh on the same tick.
   useEffect(() => {
-    const id = window.setInterval(() => { void refreshList(); }, 3000);
+    const id = window.setInterval(() => { void refreshList(); void refreshCalls(); }, 3000);
     return () => window.clearInterval(id);
-  }, [refreshList]);
+  }, [refreshList, refreshCalls]);
 
   const loadEnriched = useCallback((e: EnrichedDonation, openFirst: boolean) => {
     setCurrent(e);
@@ -198,12 +207,12 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
         donation: e.donation,
         rankings: Object.keys(e.rankings || {}).length ? e.rankings : (prev?.rankings ?? {}),
       }));
-      await Promise.all([refreshList(), refreshRecipients()]);
+      await Promise.all([refreshList(), refreshCalls(), refreshRecipients()]);
       pushToast('Dispatch complete — donor notified');
     } catch (err: any) {
       pushToast(err.message || 'Dispatch failed', true);
     } finally { setBusyKey('dispatch', false); }
-  }, [current, refreshList, refreshRecipients, pushToast]);
+  }, [current, refreshList, refreshCalls, refreshRecipients, pushToast]);
 
   const rerank = useCallback(async (itemId: string, weights: Weights) => {
     try {
@@ -251,14 +260,14 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.reset();
       setCurrent(null); setLiveRank({}); setEquity(null); setChat([]); setAppliedPatchCount(0);
-      setSelectedItemId(null); setSelectedRecipientId(null);
-      await Promise.all([refreshRecipients(), refreshList(), (async () => {
+      setSelectedItemId(null); setSelectedRecipientId(null); setCalls([]);
+      await Promise.all([refreshRecipients(), refreshList(), refreshCalls(), (async () => {
         try { setConfig(await api.getConfig()); } catch { /* */ }
       })()]);
       pushToast('Demo reset');
     } catch (err: any) { pushToast(err.message || 'Reset failed', true); }
     finally { setBusyKey('init', false); }
-  }, [refreshRecipients, refreshList, pushToast]);
+  }, [refreshRecipients, refreshList, refreshCalls, pushToast]);
 
   const detailOpen = useMemo<boolean>(() => (
     !!selectedItemId && !!current && current.donation.items.some((i) => i.id === selectedItemId)
@@ -276,7 +285,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   }, [selectedItemId, liveRank]);
 
   const value: DonnaState = {
-    mode, recipients, recipientsById, config, donations, current,
+    mode, recipients, recipientsById, config, donations, calls, current,
     selectedItemId, selectedRecipientId, detailOpen, liveRank, equity, chat, appliedPatchCount,
     busy, toast, activeRankings, activeExplanation,
     ingest, loadCanned, openItem, closeDetail, selectRecipient, dispatch,

@@ -22,7 +22,7 @@ export function Feed({ onNew }: { onNew: () => void }) {
   return (
     <aside className="feed">
       <div className="feed-head">
-        <span className="feed-title">Live feed</span>
+        <span className="feed-title">Inbound</span>
         <span className="feed-legend" title="Channels donations arrive on">☎ 💬 ✉ 🚶</span>
       </div>
 

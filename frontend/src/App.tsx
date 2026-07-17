@@ -5,6 +5,7 @@ import { Feed } from './components/Feed';
 import { IntakeModal } from './components/IntakeModal';
 import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
+import { OutboundPanel } from './components/OutboundPanel';
 import { EquityTab } from './components/EquityTab';
 import { ManagerDrawer } from './components/ManagerDrawer';
 
@@ -49,7 +50,9 @@ function Shell() {
       {view === 'dispatch' ? (
         <>
           <Feed onNew={() => setIntakeOpen(true)} />
-          {detailOpen && <DetailPanel />}
+          {/* right dock is always mounted: Outbound by default, swaps to the
+              item Detail view while an item is selected (§F) */}
+          {detailOpen ? <DetailPanel /> : <OutboundPanel />}
         </>
       ) : (
         <EquityTab />
