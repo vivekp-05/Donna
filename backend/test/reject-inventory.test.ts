@@ -97,6 +97,9 @@ function donorVoice(opts: { fail?: boolean } = {}) {
 }
 
 describe('POST /api/donations/:id/reject — decline at the gate', () => {
+  const saved = { ...ENV };
+  afterEach(() => { Object.assign(ENV, saved); });
+
   it('rings the donor and rests at dispatching until the call ends', async () => {
     const h = makeStore([donation('d1', [item('i1', 'd1')])], [recipient('r1', 'A')]);
     const { voice, calls } = donorVoice();
@@ -119,6 +122,23 @@ describe('POST /api/donations/:id/reject — decline at the gate', () => {
     // dashboard's rail on "Outbound call" for the real duration of the call.
     expect(d.status).toBe('dispatching');
     expect(d.rejectCallId).toBe('donorcall_1');
+  });
+
+  it('names the food bank rather than saying "the food bank"', async () => {
+    // #7 made FOOD_BANK_NAME a bare proper noun so Donna identifies herself by
+    // name on every line she speaks. This is the first thing a rejected donor
+    // hears, and it said "calling from the food bank" flat until that landed.
+    Object.assign(ENV, { foodBankName: 'San Marin Food Bank' });
+    const h = makeStore([donation('d1', [item('i1', 'd1')])], [recipient('r1', 'A')]);
+    const { voice, calls } = donorVoice();
+    const app = createServer({ store: h.store, llm: stubLlm, voice });
+
+    await app.request('/api/donations/d1/reject', { method: 'POST' });
+
+    expect(calls[0].script).toMatch(/calling from San Marin Food Bank/);
+    expect(calls[0].script).not.toMatch(/from the food bank/);
+    // No article before the name — that is what the bare-proper-noun rule buys.
+    expect(calls[0].script).not.toMatch(/the San Marin Food Bank/);
   });
 
   it('never offers the donation to a pantry', async () => {

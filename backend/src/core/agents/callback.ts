@@ -2,6 +2,7 @@ import type { Donation, DonationItem } from '../types.js';
 import type { LlmClient } from './llm.js';
 import { createLlm } from './llm.js';
 import { buildTaskPrompt } from './protocol.js';
+import { ENV } from '../../config.js';
 
 const INSTRUCTIONS =
   'You are Donna, composing a warm SMS-style callback to a food donor once their donation ' +
@@ -101,6 +102,13 @@ function template(donorName: string, items: CallbackItem[]): string {
  * Held items are deliberately NOT mentioned: those were taken into inventory, so
  * naming them inside a "we can't take this" call is a contradiction the donor
  * has to untangle mid-sentence.
+ *
+ * Donna NAMES the food bank here, like every other line she speaks — it is a
+ * self-identification down a phone, the exact parallel of inbound.ts's "Thanks
+ * for calling ${FOOD_BANK_NAME} — this is Donna". This said "the food bank" flat
+ * until FOOD_BANK_NAME was fixed to a bare proper noun (#7); a donor who is being
+ * turned down deserves to know by whom. Note the string is interpolated WITHOUT a
+ * leading article, which is the whole reason that fix requires a proper noun.
  */
 export function rejectionScript(donation: Donation): string {
   const declined = donation.items.filter((i) => i.status !== 'held');
@@ -108,7 +116,7 @@ export function rejectionScript(donation: Donation): string {
     ? declined.map((i) => `${i.qtyLbs} lbs of ${i.item}`).join(' and ')
     : 'your donation';
   return (
-    `Hi, this is Donna calling from the food bank about the ${what} you offered — ` +
+    `Hi, this is Donna calling from ${ENV.foodBankName} about the ${what} you offered — ` +
     "thank you so much for thinking of us. I'm sorry to say a coordinator has reviewed it " +
     "and we're not able to take it this time. We'd really appreciate you calling us again " +
     'with future donations.'
