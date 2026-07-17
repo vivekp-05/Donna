@@ -6,11 +6,11 @@ import { IntakeModal } from './components/IntakeModal';
 import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
 import { NetworkPanel } from './components/NetworkPanel';
-import { EquityTab } from './components/EquityTab';
-import { ManagerDrawer } from './components/ManagerDrawer';
 import { DemoStage } from './components/DemoStage';
+import { ManagerDrawer } from './components/ManagerDrawer';
+import { MessageSquare, RotateCcw } from './icons';
 
-type View = 'stage' | 'dispatch' | 'equity';
+type View = 'dispatch' | 'demo';
 
 export default function App(): React.JSX.Element {
   return (
@@ -22,9 +22,9 @@ export default function App(): React.JSX.Element {
 
 function Shell() {
   const { mode, reset, busy, toast, detailOpen, appliedPatchCount } = useDonna();
-  // Opens on the stage view: on demo night the first thing anyone should see is
-  // the narrative, not the console.
-  const [view, setView] = useState<View>('stage');
+  // Boots into the Dispatch console (§I.1): the inbound/outbound ops view is the
+  // default face of the product; the Demo tab is opt-in.
+  const [view, setView] = useState<View>('dispatch');
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [mgrOpen, setMgrOpen] = useState(false);
 
@@ -37,21 +37,18 @@ function Shell() {
       <MapView />
 
       <header className="hbar">
-        <span className="wordmark">Donna</span>
+        <span className="wordmark">Donna<span className="wm-dot">.</span></span>
         <div className="seg">
-          <button className={`seg-btn${view === 'stage' ? ' on' : ''}`} onClick={() => setView('stage')}>Stage</button>
           <button className={`seg-btn${view === 'dispatch' ? ' on' : ''}`} onClick={() => setView('dispatch')}>Dispatch</button>
-          <button className={`seg-btn${view === 'equity' ? ' on' : ''}`} onClick={() => setView('equity')}>Equity</button>
+          <button className={`seg-btn${view === 'demo' ? ' on' : ''}`} onClick={() => setView('demo')}>Demo</button>
         </div>
         <div className="hspacer" />
-        <span className={`status-dot${live ? ' live' : ''}`} title={modeTip} />
+        <span className={`mode-tag${live ? ' live' : ''}`} title={modeTip}>{live ? 'Live' : 'Sim'}</span>
         <button className="icon-btn mgr" onClick={() => setMgrOpen((o) => !o)} title="Manager console" aria-label="Manager console">
-          🗨{appliedPatchCount > 0 && <span className="badge">{appliedPatchCount}</span>}
+          <MessageSquare />{appliedPatchCount > 0 && <span className="badge">{appliedPatchCount}</span>}
         </button>
-        <button className="icon-btn" onClick={reset} disabled={busy.init} title="Reset demo" aria-label="Reset demo">↻</button>
+        <button className="icon-btn" onClick={reset} disabled={busy.init} title="Reset demo" aria-label="Reset demo"><RotateCcw /></button>
       </header>
-
-      {view === 'stage' && <DemoStage />}
 
       {view === 'dispatch' && (
         <>
@@ -61,8 +58,7 @@ function Shell() {
           {detailOpen ? <DetailPanel /> : <NetworkPanel />}
         </>
       )}
-
-      {view === 'equity' && <EquityTab />}
+      {view === 'demo' && <DemoStage />}
 
       {intakeOpen && <IntakeModal onClose={() => setIntakeOpen(false)} />}
 

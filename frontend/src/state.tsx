@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { api } from './api';
 import { humanize } from './theme';
 import type {
-  AgentConfig, CallAttempt, CallLogEntry, Channel, Donation, EnrichedDonation, EquitySimResult,
+  AgentConfig, CallAttempt, CallLogEntry, Channel, Donation, EnrichedDonation,
   ManagerReply, ManualCallInput, Mode, RankResponse, RankedRecipient, Recipient, Weights,
 } from './types';
 
@@ -22,11 +22,10 @@ interface DonnaState {
   selectedRecipientId: string | null;
   detailOpen: boolean;
   liveRank: Record<string, RankResponse>;
-  equity: EquitySimResult | null;
   chat: ChatMsg[];
   appliedPatchCount: number;
 
-  busy: { init: boolean; ingest: boolean; dispatch: boolean; equity: boolean; chat: boolean };
+  busy: { init: boolean; ingest: boolean; dispatch: boolean; chat: boolean };
   toast: Toast | null;
 
   activeRankings: RankedRecipient[];
@@ -38,12 +37,11 @@ interface DonnaState {
   closeDetail: () => void;
   selectRecipient: (id: string | null) => void;
   dispatch: () => Promise<void>;
-  callRecipient: (itemId: string, recipientId: string) => Promise<CallAttempt>;
-  logManualCall: (itemId: string, recipientId: string, input: ManualCallInput) => Promise<CallAttempt>;
+  callRecipient: (itemId: string, recipientId: string) => Promise<CallAttempt | undefined>;
+  logManualCall: (itemId: string, recipientId: string, input: ManualCallInput) => Promise<CallAttempt | undefined>;
   rerank: (itemId: string, weights: Weights) => Promise<void>;
   updateConfig: (patch: Partial<AgentConfig>) => Promise<void>;
   managerSend: (message: string) => Promise<void>;
-  runEquity: (drops?: number) => Promise<void>;
   reset: () => Promise<void>;
   pushToast: (text: string, error?: boolean) => void;
 }
@@ -66,11 +64,10 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [liveRank, setLiveRank] = useState<Record<string, RankResponse>>({});
-  const [equity, setEquity] = useState<EquitySimResult | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [appliedPatchCount, setAppliedPatchCount] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
-  const [busy, setBusy] = useState({ init: true, ingest: false, dispatch: false, equity: false, chat: false });
+  const [busy, setBusy] = useState({ init: true, ingest: false, dispatch: false, chat: false });
 
   const toastTimer = useRef<number | undefined>(undefined);
   const pushToast = useCallback((text: string, error?: boolean) => {
@@ -238,9 +235,16 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.callRecipient(itemId, recipientId);
       await syncAfterCall();
-      const ok = res.attempt.outcome === 'accepted';
-      pushToast(ok ? `${res.attempt.recipientName} accepted` : `${res.attempt.recipientName} — ${res.attempt.reason || humanize(res.attempt.outcome)}`, !ok && res.attempt.outcome === 'declined');
-      return res.attempt;
+      // §J.3 — under live (vapi) voice the attempt resolves later via webhook, so
+      // the response carries no attempt. Report placement, not an outcome.
+      const attempt = res.attempt;
+      if (!attempt) {
+        pushToast('Call placed — outcome arrives via webhook');
+        return attempt;
+      }
+      const ok = attempt.outcome === 'accepted';
+      pushToast(ok ? `${attempt.recipientName} accepted` : `${attempt.recipientName} — ${attempt.reason || humanize(attempt.outcome)}`, !ok && attempt.outcome === 'declined');
+      return attempt;
     } catch (err: any) {
       pushToast(err.message || 'Call failed', true);
       throw err;
@@ -252,7 +256,8 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.logManualCall(itemId, recipientId, input);
       await syncAfterCall();
-      pushToast('Manual call logged');
+      // §J.3 — guard: a live-voice backend may return no attempt inline.
+      pushToast(res.attempt ? 'Manual call logged' : 'Call placed — outcome arrives via webhook');
       return res.attempt;
     } catch (err: any) {
       pushToast(err.message || 'Could not log call', true);
@@ -294,18 +299,11 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
     } finally { setBusyKey('chat', false); }
   }, [refreshRecipients, selectedItemId, config, fetchRank]);
 
-  const runEquity = useCallback(async (drops = 30) => {
-    setBusyKey('equity', true);
-    try { setEquity(await api.equitySimulate(drops)); }
-    catch (err: any) { pushToast(err.message || 'Simulation failed', true); }
-    finally { setBusyKey('equity', false); }
-  }, [pushToast]);
-
   const reset = useCallback(async () => {
     setBusyKey('init', true);
     try {
       await api.reset();
-      setCurrent(null); setLiveRank({}); setEquity(null); setChat([]); setAppliedPatchCount(0);
+      setCurrent(null); setLiveRank({}); setChat([]); setAppliedPatchCount(0);
       setSelectedItemId(null); setSelectedRecipientId(null); setCalls([]);
       await Promise.all([refreshRecipients(), refreshList(), refreshCalls(), (async () => {
         try { setConfig(await api.getConfig()); } catch { /* */ }
@@ -332,11 +330,11 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
 
   const value: DonnaState = {
     mode, recipients, recipientsById, config, donations, calls, current,
-    selectedItemId, selectedRecipientId, detailOpen, liveRank, equity, chat, appliedPatchCount,
+    selectedItemId, selectedRecipientId, detailOpen, liveRank, chat, appliedPatchCount,
     busy, toast, activeRankings, activeExplanation,
     ingest, loadCanned, openItem, closeDetail, selectRecipient, dispatch,
     callRecipient, logManualCall,
-    rerank, updateConfig, managerSend, runEquity, reset, pushToast,
+    rerank, updateConfig, managerSend, reset, pushToast,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -237,3 +237,273 @@ Result must look like a professional ops tool at first glance.
 ### G.5 Guardrails
 Scoring/pipeline/API beyond §G.3 unchanged. All tests green. tsc + vitest +
 vite build green. Canned e2e < 1s. Item Detail view internals unchanged.
+
+## H. v1.4 — De-AI visual revamp + Demo page (user feedback)
+
+User verdict: layout is loved — DO NOT change it. But the surface styling
+"looks very, very AI generated": the red/green glowing dots and emoji have to
+go. Same structure, new skin. Plus a new empty Demo page.
+
+### H.1 Hard bans (the "AI tells")
+- **ZERO emojis anywhere.** Every emoji/pictograph glyph is replaced by an
+  inline SVG stroke icon (see H.2) or plain text. This includes: channel icons,
+  the handshake/cart glyphs in Network rows, the manual-call person marker,
+  callback envelope, tune gear, phone glyphs, snowflake — all of them. Audit
+  with a regex for non-ASCII in frontend/src before returning.
+- **No glowing colored dots.** Kill the dot+glow status language entirely.
+- **No glassy translucency/backdrop-blur, no soft shadows-with-glow, no
+  gradient buttons, no green-tinted pill fills.**
+
+### H.2 The replacement language (professional dispatch tool)
+- **Status becomes typographic + structural, not ornamental:**
+  - Items (Inbound): keep the 3px left rule as the only color element; status
+    is a small-caps micro-label at line end — `PENDING` (muted), `PLACED`
+    (muted green text), `NO TAKERS` (muted red text). Red card keeps a 4% tint
+    max. "→ {recipient}" stays as plain text.
+  - Network rows: last-call outcome as a micro-label after the name
+    (`ACCEPTED` / `DECLINED` / quiet `—` when never called), not a dot.
+  - Transcript/manual markers: text tags `SIM` / `MANUAL` / `VAPI` in hairline
+    boxes, as the SIM tag already is.
+- **Icons:** single inline SVG set (one file `src/icons.tsx`), stroke-based,
+  16px, 1.5px stroke, `currentColor`, Lucide-like geometry, muted by default.
+  Needed: phone, message-square, mail, footprints/walk, snowflake, gear,
+  person, arrow-left, x, plus. No icon fonts, no emoji fallbacks.
+- **Surfaces:** opaque panels (near-black, e.g. #101215 on #0b0d0f canvas),
+  1px hairline borders at 6–8% white alpha, radius 8 (panels) / 6 (rows).
+  Dividers are hairlines, not nested cards.
+- **Buttons:** primary = solid accent, radius 6, no glow/gradient; secondary =
+  hairline outline, transparent fill. Text labels, sentence case ("Donna, call",
+  "Log manual call", "+ Donation" stays).
+- **Chips (agreed-to-take, item pills):** hairline-bordered quiet tags —
+  transparent fill, muted foreground, radius 4. No colored fills.
+- **Type:** system sans; micro-labels 11px/650/+0.06em small caps; body 13–14;
+  titles 16/650. Timestamps 12px tabular, muted. The wordmark may get slight
+  character (tighter tracking, accent period: "Donna.") but nothing cute.
+- Map, layout dimensions, interactions, polling, routes: UNCHANGED.
+- Equity + Detail views get the same skin (labels/buttons/borders), no
+  structural change. Score bars in Detail stay single-accent thin rules.
+
+### H.3 Demo page (empty mount point)
+- Header segmented control becomes `Dispatch | Equity | Demo`.
+- New `frontend/src/components/DemoPage.tssx → DemoPage.tsx`: an intentionally
+  EMPTY full-bleed container rendered when the Demo tab is active, styled to
+  theme (canvas bg), containing exactly one clearly-marked mount slot:
+  `<section id="demo-root" data-demo-slot />` plus one muted centered line
+  ("Demo") so the tab isn't a black void. A code comment marks it as the
+  ingestion point for an externally-built demo page (pipeline exists; content
+  arrives later). No fetches, no other chrome.
+
+### H.4 Verification
+tsc + vite build green; non-ASCII/emoji regex audit of frontend/src returns
+clean (map attribution glyphs and CSS arrows like → ← ✕ in text are allowed
+ONLY for →, ←, ✕, ⌀ typographic marks — no pictographic emoji); all three
+tabs render.
+
+## I. v1.5 — Map-first Demo stage + routing narrative (user feedback)
+
+User verdict: the map must be the face of the product on BOTH tabs. Tab 1
+(Dispatch) is the inbound/outbound console and becomes the DEFAULT view. Tab 2
+(Demo) currently hides the map behind an opaque card grid — that is wrong. The
+demo must play out ON the map: the inbound supplier call transcript forms, a
+routing decision is made and *seen* (direct-to-pantry vs stored-into-inventory),
+the outbound call transcript forms, the origin and destination light up with a
+route, and the supplier gets a drafted callback message. §B–§H rules (one
+accent, ≤2-line rows, humanize() everywhere, zero emojis, flat opaque surfaces,
+no backdrop-blur) all still bind.
+
+### I.0 Hard constraints (from the codebase — verified 2026-07-16)
+- Backend is UNTOUCHED in this pass. No depot/inventory concept exists there
+  (only `ENV.foodBankName`, a display string); `distanceMiles` is
+  pickup→recipient only. The direct-vs-store narrative is presentation-layer
+  ONLY, derived deterministically client-side. Say so in code comments.
+- `/api/live` is populated only by VAPI webhooks — ALWAYS empty in sim mode.
+  Sim dispatch is synchronous and instant (zero built-in delays). All demo
+  pacing is client-owned: dispatch first, then REPLAY the returned attempts.
+- `pickupLat/pickupLng` are optional — every map feature must no-op gracefully
+  when they are absent.
+- Items stay `pending` after a decline; `dialing` is a transient object; there
+  is no `declined` item status. `awaiting_triage` occurs only for real inbound
+  VAPI calls — the canned path lands at `scored`.
+- No new npm dependencies; no CDN/runtime-network assets. Frontend files only
+  (`frontend/src/**`, `frontend/index.html`).
+
+### I.1 Global
+- **Default view = `dispatch`** (App.tsx currently boots into `demo`). Header
+  segmented control stays `Dispatch | Demo`.
+- **Display face:** bundle Space Grotesk (variable or 500/700 woff2, OFL
+  license file alongside) under `frontend/src/assets/fonts/`, `@font-face` in
+  styles.css, exposed as `--display`. Used ONLY for: wordmark, panel titles,
+  seg control, stat numbers, stage phase labels. Body copy stays `--sans`.
+  Font stack must fall back to the current system stack so a missing asset
+  degrades silently.
+- **New tokens** in `:root`: `--flow-direct` (= `--hot`), `--flow-store`
+  `#4fb3a9`, `--route-dim rgba(231,233,236,0.22)`. No other token churn.
+- **Map vignette:** one non-interactive overlay div inside `.map-hero`
+  (`pointer-events:none`, radial-gradient, edges max ~35% black) so floating
+  panels read against tiles. NOT backdrop-blur (§H ban stands).
+- **Food bank home base:** `theme.ts` exports
+  `FOOD_BANK = { name: 'SF-Marin Food Bank', lat: 37.7541, lng: -122.3924 }`
+  (display-only; comment that the backend has no depot). Rendered on both tabs
+  as a small diamond marker with a quiet label.
+- **Routing verdict util** in `theme.ts`:
+  `routeVia(hoursToSpoil: number): 'direct' | 'store'` →
+  `hoursToSpoil >= 168 ? 'store' : 'direct'` (7-day threshold), plus
+  `verdictCopy()` returning the one-line reason, e.g. direct: "spoils in 48h —
+  routed straight from the supplier"; store: "shelf-stable — taken into
+  inventory, allocated from the warehouse". Canned scenario verdicts:
+  strawberries 48h → direct, bread 24h → direct, beans 2160h → store.
+
+### I.2 Demo bus (new `frontend/src/demoBus.ts`)
+A tiny module-scope store with subscribe/get/set + a `useDemoBus()` hook via
+`useSyncExternalStore`. Shape:
+`{ active: boolean, pickup?: {lat,lng,label}, routes: Route[], focusRecipientIds: string[], failedAtPickup?: boolean }`
+where `Route = { id, kind: 'direct'|'store-leg1'|'store-leg2', from: [number,number], to: [number,number] }`.
+DemoStage writes it; MapView reads it. Neither imports the other — the stage
+stays crash-isolated from the console (preserve the existing doc comment's
+intent in DemoStage.tsx).
+
+### I.3 MapView additions
+- `<DemoLayer/>` rendered inside `MapContainer`: subscribes to the bus;
+  renders the food-bank diamond (always), route arcs, and endpoint pulses;
+  when `active`, recipient pins not in `focusRecipientIds` drop to ~25%
+  fillOpacity; FitBounds yields to the bus (fit to route endpoints + food
+  bank while routes exist).
+- **Arcs:** quadratic bezier (control point offset perpendicular ~15% of the
+  chord), 64 samples, react-leaflet `Polyline`. Draw-in ≈900ms by slicing the
+  sampled points on rAF (do not fight leaflet's SVG internals with CSS).
+  `direct` = solid `--flow-direct`, weight 3; `store-leg1` solid and
+  `store-leg2` dashed in `--flow-store`. A failed item = pulsing muted-red
+  ring at the pickup pin, no route.
+- **Dispatch tab routes**, same Arc component, from `useDonna` state directly:
+  matched item selected → its full route (via warehouse when
+  `routeVia(item) === 'store'`: pickup→FOOD_BANK, FOOD_BANK→recipient);
+  pending item + a selected recipient → thin dashed preview pickup→recipient
+  in `--route-dim`.
+- Legend gains two route swatches (direct / via warehouse). Keep the ramp.
+
+### I.4 Demo tab — choreographed stage over the visible map
+`.stage` becomes a transparent, `pointer-events:none` layer (map pans
+underneath); panels are opaque floating surfaces (`--panel`, hairline border,
+radius 8, `--shadow`, `pointer-events:auto`) that enter with a 160ms
+translate+fade. Kill the `.stage-grid` nth-child hack entirely.
+
+Layout: left 340px panel **"Inbound — supplier line"** (caller identity +
+typewriter transcript); right 340px panel **"Outbound — Donna calling"**
+(callee identity + typewriter transcript; swaps per call; finally swaps to the
+Draft message card); bottom-center strip (≤720px) holding item cards with
+verdict micro-labels (`DIRECT` in `--flow-direct` / `STORE` in `--flow-store` +
+one verdictCopy line) and the stage controls.
+
+**Choreographer** — a client state machine
+`idle → inbound → parsed → gate → calling(i) → callback → done`:
+1. *idle*: map + food bank marker, one muted line, primary **"Run demo"**
+   (calls `api.canned()`).
+2. *inbound*: left panel types out `parseRaw(rawText)` at ~550ms/line; pickup
+   pin drops via the bus. A quiet "Skip" control fast-forwards any phase.
+3. *parsed*: item cards stagger in (~250ms apart) with verdict labels.
+4. *gate*: the human gate (PRD §10): **"Approve & dispatch"** primary button.
+   On click call `api.dispatch(id)` — it returns the fully-resolved donation;
+   do NOT render outcomes yet.
+5. *calling(i)*: replay attempts item-by-item: right panel shows the recipient
+   name, types the attempt transcript at ~500ms/line, lands the outcome
+   micro-label; on accept the bus draws the route (direct: pickup→recipient;
+   store: pickup→FB, then FB→recipient chained ~300ms later). Declines move to
+   the next attempt. Bread (canned): no route, `failedAtPickup` pulse,
+   `NO TAKERS` label.
+6. *callback*: right panel swaps to the **Draft message card** — compose-style:
+   "To {donorName} · {org if parseable}", "via text · {sourceContact}" (the
+   canned channel is voice/SMS — label honestly per channel, email framing
+   only when channel is email), body = `donorMessage` typed fast (~30ms/word),
+   then a quiet "Ready to send — Delivered" state line.
+7. *done*: summary chips in the strip (`2 placed · 1 unplaceable · 5,200 lbs
+   moved`), routes persist. "Reset" runs `api.reset()` and returns to idle.
+
+**Live-mode compatibility:** keep the 1s self-contained poll. If `/api/live`
+has lines (real VAPI), stream them into the phase-appropriate panel instead of
+replay pacing; donations at `awaiting_triage` surface the gate wired to
+`api.approve` + polling (existing behavior). A `donorMessage` beginning
+"Dispatch failed" renders as a plain error line, never in the compose card.
+
+### I.5 Dispatch tab polish (no structural change)
+Display face on titles/wordmark/seg; panel-enter transitions; hover polish;
+Feed cards for `matched` items gain a small route glyph + "→ {recipient}"
+(already §G); map routes per I.3. Everything else — §G layout, Detail
+internals, polling, endpoints — unchanged.
+
+### I.6 Webflow comp (design source of record)
+On the Webflow site "Donna" (6a59a21adef5d659dbfb5802): a "Design v1.5" page
+set — tokens board (colors/type/radii), an Operations screen comp, and a
+4-beat Demo storyboard — built with Webflow styles mirroring the tokens above.
+Static comp only; publish only with explicit user approval.
+
+### I.7 Verification
+`npx tsc --noEmit` + `vite build` green in frontend/; `git diff` clean outside
+`frontend/` and `docs/`; §H.4 non-ASCII audit still clean; canned run through
+the UI end-to-end (inbound → verdicts → gate → replayed calls → routes →
+draft card) with screenshots of both tabs; full demo replay ≤90s with Skip
+available at every phase.
+
+## J. v1.6 — Live-first demo on the Workers backend (user feedback)
+
+Real inbound/outbound calls now work end to end in production: dispatch is a
+webhook-driven DB state machine (dispatchMachine.ts) on Cloudflare Workers, the
+dashboard deploys to Vercel, and /api/live is DB-backed. The Demo tab therefore
+treats REAL calls as the primary experience; the canned replay stays only as
+stage insurance. §B–§I rules all still bind.
+
+### J.0 Port provenance
+frontend/src and docs/UI_REDESIGN.md on this base were adopted wholesale from
+branch v15-redesign-local (v1.4 de-AI skin + v1.5 map-first stage); main's
+frontend/vercel.json and frontend/.gitignore are preserved; backend untouched.
+The Equity tab remains deleted per the two-tab requirement (§I); the backend
+endpoint GET /api/equity/simulate still exists server-side.
+
+### J.1 One stage, two drivers
+DemoStage keeps ONE set of visual panels (Inbound, Outbound/Draft, verdict
+strip, map bus writes) and gains two data drivers:
+- **Replay driver** (existing §I.4 choreographer): used for the canned path
+  when dispatch returns a fully-resolved donation (sim voice).
+- **Live driver**: renders the same panels directly from polled server state
+  (1s cadence, unchanged). No scripted sleeps — the phone call itself is the
+  pacing.
+
+### J.2 Live driver bindings (poll: /api/donations + /api/live + /api/health mode)
+- Captions in /api/live with NO stage donation (or newest at awaiting_triage)
+  → Inbound panel ON CALL, lines streaming as spoken.
+- Donation lands at awaiting_triage (it appears only AFTER hangup, fully
+  parsed) → verdict strip with routing verdicts + the human gate wired to
+  api.approve (202; nothing else may fire calls).
+- status 'dispatching': the item with .dialing drives the Outbound panel
+  (recipient name, elapsed from startedAt — dialing persists for MINUTES on
+  real calls); a single live call's lines stream into it. New attempts on any
+  item → outcome micro-label + demoBus route write (same visuals as replay:
+  direct vs store legs, failedAtPickup on unplaceable).
+- donation.donorMessage set → Draft-to-supplier panel (unchanged card).
+- status 'resolved' → done summary chips. No Reset required in live flow;
+  Reset remains a quiet control for the canned path.
+- Idle + mode.voice === 'vapi' → idle line becomes "Line open — waiting for a
+  call" (health mode is already polled); the Run demo (canned) button stays.
+
+### J.3 Contract guards (verified against backend @ d74a29f)
+- POST /donations/:id/dispatch returns a fully-resolved donation ONLY in sim;
+  under live voice it returns an in-flight snapshot. approveDispatch must
+  check: if the returned donation still has pending items or status
+  'dispatching', hand off to the live driver instead of the replay.
+- DirectedCallResponse.attempt is undefined in live mode (backend
+  pipeline.ts returns {item, attempt: undefined}) — type becomes
+  `attempt?: CallAttempt` (documented divergence from the backend mirror;
+  backend types are wrong about their own live behavior) and state.tsx
+  callRecipient/logManualCall toasts must guard.
+- api.ts gains liveCall(callId) → GET /api/live/:callId (available for
+  scoped streams).
+
+### J.4 Verification protocol (no real calls, ever, from a test)
+- Sim: full canned run (replay driver) as §I.7.
+- Live path: start backend with VOICE_PROVIDER=vapi LLM_PROVIDER=mock
+  DB_PROVIDER=json (no real dial happens without an approve), then POST
+  fabricated VAPI webhooks to /api/vapi/webhook (no secret set locally):
+  transcript events {"message":{"type":"transcript","role":"assistant"|"user",
+  "transcript":"...","call":{"id":"fake_1"}}} must stream into the Inbound
+  panel; an end-of-call-report with call.type 'inboundPhoneCall' and
+  artifact.transcript must pop the donation at awaiting_triage with verdicts
+  + gate. DO NOT click Approve under vapi voice in any automated test.

@@ -78,11 +78,15 @@ export interface CallAttempt {
   outcome: CallOutcome; reason?: string;
   transcript: Array<{ speaker: 'agent' | 'recipient'; text: string }>;
   at: string; simulated: boolean;
-  manual?: boolean;                 // §G.3 — human-logged intervention (renders 👤, not SIM)
+  manual?: boolean;                 // §G.3 — human-logged intervention (renders MANUAL tag, not SIM)
 }
 // §G.3 — POST /api/items/:itemId/call/:recipientId (directed agent call) and
 // POST /api/items/:itemId/manual/:recipientId (human log) both return this shape.
-export interface DirectedCallResponse { item: DonationItem; attempt: CallAttempt; }
+// §J.3: `attempt` is OPTIONAL — under live (vapi) voice the backend pipeline returns
+// {item, attempt: undefined} because the real call resolves later via webhook, not
+// inline. This is a documented divergence from the backend type mirror (the backend
+// declares attempt non-optional but is wrong about its own live behavior).
+export interface DirectedCallResponse { item: DonationItem; attempt?: CallAttempt; }
 export interface ManualCallInput { outcome: CallOutcome; reason?: string; notes?: string; }
 // §D.5 / §F — one flattened call-log row per CallAttempt, tagged with its donation
 // and item. Mirrors backend/src/server.ts CallLogEntry (GET /api/calls, newest

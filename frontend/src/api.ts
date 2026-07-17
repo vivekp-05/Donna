@@ -3,7 +3,7 @@
 
 import type {
   AgentConfig, CallLogEntry, Channel, DirectedCallResponse, Donation, EnrichedDonation,
-  EquitySimResult, HealthResponse, HistoryEvent, LiveResponse, ManagerReply,
+  HealthResponse, HistoryEvent, LiveLine, LiveResponse, ManagerReply,
   ManualCallInput, RankResponse, RankedRecipient, Recipient, Weights,
 } from './types';
 
@@ -67,6 +67,11 @@ export const api = {
   /** Calls on the phone right now, with transcripts as they are spoken. */
   live: () => request<LiveResponse>('/live'),
 
+  // §J.3 — lines for a single live call (GET /api/live/:callId returns { lines }),
+  // available for scoped caption streams keyed to a specific call id.
+  liveCall: (callId: string) =>
+    request<{ lines: LiveLine[] }>(`/live/${encodeURIComponent(callId)}`),
+
   rank: (itemId: string, weights?: Weights) =>
     request<any>(`/items/${itemId}/rank`, {
       method: 'POST',
@@ -111,9 +116,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
-
-  equitySimulate: (drops = 30) =>
-    request<EquitySimResult>(`/equity/simulate?drops=${drops}`),
 
   reset: () => request<any>('/demo/reset', { method: 'POST', body: '{}' }),
 
