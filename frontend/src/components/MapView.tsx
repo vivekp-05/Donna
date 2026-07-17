@@ -21,14 +21,15 @@ const pickupIcon = L.divIcon({
   iconAnchor: [7, 7],
 });
 
-// Food-bank home base marker (§I.3): a quiet rotated-square diamond + label.
+// Food-bank home base marker (§I.3, bolder per §K.3): a rotated-square diamond
+// with a thicker stroke, a static emphasis ring, and a heavier haloed label.
 // Rendered ALWAYS, on both tabs, even when the demo bus is idle. Display-only —
-// the backend has no depot (see theme.ts FOOD_BANK).
+// the backend has no depot (see theme.ts FOOD_BANK). No glow/gradient (§H).
 const foodBankIcon = L.divIcon({
   className: '',
-  html: `<div class="fb-marker"><div class="fb-diamond"></div><div class="fb-label">${FOOD_BANK.name}</div></div>`,
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  html: `<div class="fb-marker"><div class="fb-ring"></div><div class="fb-diamond"></div><div class="fb-label">${FOOD_BANK.name}</div></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 // Emphasized pulse ring dropped at route endpoints while a demo route is drawn.
@@ -43,6 +44,14 @@ const endpointPulseIcon = L.divIcon({
 const failedPulseIcon = L.divIcon({
   className: '',
   html: '<div class="rt-pulse fail"><div class="rt-ring"></div><div class="rt-core"></div></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
+// §K.1 — teal pulse dot resting AT the food bank for an item taken into inventory.
+const inventoryPulseIcon = L.divIcon({
+  className: '',
+  html: '<div class="rt-pulse inv"><div class="rt-ring"></div><div class="rt-core"></div></div>',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
 });
@@ -141,9 +150,18 @@ function DemoLayer() {
         <Arc key={r.id} from={r.from} to={r.to} kind={r.kind} />
       ))}
 
-      {bus.routes.map((r) => (
-        <Marker key={`ep-${r.id}`} position={r.to} icon={endpointPulseIcon} zIndexOffset={700} />
-      ))}
+      {/* Endpoint pulse at each route destination — but NOT at the food bank, which
+          carries its own diamond (and the teal inventory pulse when items rest there). */}
+      {bus.routes
+        .filter((r) => !(r.to[0] === FB[0] && r.to[1] === FB[1]))
+        .map((r) => (
+          <Marker key={`ep-${r.id}`} position={r.to} icon={endpointPulseIcon} zIndexOffset={700} />
+        ))}
+
+      {/* §K.1 — inventory rests at the food bank: a persistent teal pulse dot. */}
+      {bus.heldAtFoodBank && (
+        <Marker position={FB} icon={inventoryPulseIcon} zIndexOffset={850} />
+      )}
 
       {bus.failedAtPickup && bus.pickup && (
         <Marker
@@ -174,7 +192,7 @@ function FitBounds({ pts }: { pts: Array<[number, number]> }) {
 export function MapView() {
   const {
     current, recipients, recipientsById, activeRankings,
-    selectedItemId, selectedRecipientId, selectRecipient,
+    selectedItemId, selectedRecipientId, selectRecipient, heldOriginItemIds,
   } = useDonna();
   const bus = useDemoBus();
 
@@ -195,28 +213,41 @@ export function MapView() {
   // bus. The bus (demo tab) takes over the map when active, so we suppress these
   // then. Guard: pickupLat/pickupLng are optional; without them this is a no-op.
   const dispatchRoutes = useMemo<Array<{ id: string; from: [number, number]; to: [number, number]; kind: ArcKind }>>(() => {
-    if (bus.active || !pickup) return [];
+    if (bus.active) return [];
     const item = selectedItemId ? donation?.items.find((i) => i.id === selectedItemId) : null;
     if (!item) return [];
+    // §K.1 — a held item (or one sent OUT of inventory via a directed call) already
+    // sits in the warehouse, so its route ORIGINATES at the food bank, not the pickup.
+    const fromInventory = item.status === 'held' || heldOriginItemIds.has(item.id);
+    if (!fromInventory && !pickup) return [];
     if (item.status === 'matched' && item.matchedRecipientId) {
       const rec = recipientsById[item.matchedRecipientId];
       if (!rec) return [];
       const dest: [number, number] = [rec.lat, rec.lng];
+      if (fromInventory) {
+        return [{ id: `disp-${item.id}-inv`, from: FB, to: dest, kind: 'store-leg2' }];
+      }
       if (routeVia(item.hoursToSpoil) === 'store') {
         return [
-          { id: `disp-${item.id}-leg1`, from: pickup, to: FB, kind: 'store-leg1' },
+          { id: `disp-${item.id}-leg1`, from: pickup!, to: FB, kind: 'store-leg1' },
           { id: `disp-${item.id}-leg2`, from: FB, to: dest, kind: 'store-leg2' },
         ];
       }
-      return [{ id: `disp-${item.id}-direct`, from: pickup, to: dest, kind: 'direct' }];
+      return [{ id: `disp-${item.id}-direct`, from: pickup!, to: dest, kind: 'direct' }];
     }
-    if (item.status === 'pending' && selectedRecipientId) {
+    // §K.1 — previewing where a held item would go originates at the food bank.
+    if (item.status === 'held' && selectedRecipientId) {
+      const rec = recipientsById[selectedRecipientId];
+      if (!rec) return [];
+      return [{ id: `disp-preview-inv-${item.id}-${rec.id}`, from: FB, to: [rec.lat, rec.lng], kind: 'preview' }];
+    }
+    if (item.status === 'pending' && selectedRecipientId && pickup) {
       const rec = recipientsById[selectedRecipientId];
       if (!rec) return [];
       return [{ id: `disp-preview-${item.id}-${rec.id}`, from: pickup, to: [rec.lat, rec.lng], kind: 'preview' }];
     }
     return [];
-  }, [bus.active, pickup, selectedItemId, donation, recipientsById, selectedRecipientId]);
+  }, [bus.active, pickup, selectedItemId, donation, recipientsById, selectedRecipientId, heldOriginItemIds]);
 
   // Bus owns the frame while routes exist; otherwise fit to recipients + pickup.
   const fitPts = useMemo<Array<[number, number]>>(() => {

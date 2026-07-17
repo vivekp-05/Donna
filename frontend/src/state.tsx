@@ -20,6 +20,10 @@ interface DonnaState {
   current: EnrichedDonation | null;
   selectedItemId: string | null;
   selectedRecipientId: string | null;
+  // §K.1 — items dispatched OUT of inventory via a directed/manual call (they were
+  // 'held' when the call was placed). Their map route originates at the food bank,
+  // not the donation pickup, since the goods already sit in the warehouse.
+  heldOriginItemIds: Set<string>;
   detailOpen: boolean;
   liveRank: Record<string, RankResponse>;
   chat: ChatMsg[];
@@ -63,6 +67,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = useState<EnrichedDonation | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
+  const [heldOriginItemIds, setHeldOriginItemIds] = useState<Set<string>>(new Set());
   const [liveRank, setLiveRank] = useState<Record<string, RankResponse>>({});
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [appliedPatchCount, setAppliedPatchCount] = useState(0);
@@ -233,6 +238,11 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
   // §G.2 — "Donna, call": directed agent call to one recipient for one pending item.
   const callRecipient = useCallback(async (itemId: string, recipientId: string) => {
     try {
+      // §K.1 — remember an item sent OUT of inventory (held at call time) so the map
+      // routes it from the food bank rather than the original donation pickup.
+      if (donations.some((d) => d.items.some((i) => i.id === itemId && i.status === 'held'))) {
+        setHeldOriginItemIds((s) => new Set(s).add(itemId));
+      }
       const res = await api.callRecipient(itemId, recipientId);
       await syncAfterCall();
       // §J.3 — under live (vapi) voice the attempt resolves later via webhook, so
@@ -249,11 +259,15 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
       pushToast(err.message || 'Call failed', true);
       throw err;
     }
-  }, [syncAfterCall, pushToast]);
+  }, [syncAfterCall, pushToast, donations]);
 
   // §G.2 — "Log manual call": human-recorded outcome, persisted like an agent call.
   const logManualCall = useCallback(async (itemId: string, recipientId: string, input: ManualCallInput) => {
     try {
+      // §K.1 — as with directed calls, remember an inventory-origin placement.
+      if (donations.some((d) => d.items.some((i) => i.id === itemId && i.status === 'held'))) {
+        setHeldOriginItemIds((s) => new Set(s).add(itemId));
+      }
       const res = await api.logManualCall(itemId, recipientId, input);
       await syncAfterCall();
       // §J.3 — guard: a live-voice backend may return no attempt inline.
@@ -263,7 +277,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
       pushToast(err.message || 'Could not log call', true);
       throw err;
     }
-  }, [syncAfterCall, pushToast]);
+  }, [syncAfterCall, pushToast, donations]);
 
   const rerank = useCallback(async (itemId: string, weights: Weights) => {
     try {
@@ -305,6 +319,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
       await api.reset();
       setCurrent(null); setLiveRank({}); setChat([]); setAppliedPatchCount(0);
       setSelectedItemId(null); setSelectedRecipientId(null); setCalls([]);
+      setHeldOriginItemIds(new Set());
       await Promise.all([refreshRecipients(), refreshList(), refreshCalls(), (async () => {
         try { setConfig(await api.getConfig()); } catch { /* */ }
       })()]);
@@ -330,7 +345,7 @@ export function DonnaProvider({ children }: { children: React.ReactNode }) {
 
   const value: DonnaState = {
     mode, recipients, recipientsById, config, donations, calls, current,
-    selectedItemId, selectedRecipientId, detailOpen, liveRank, chat, appliedPatchCount,
+    selectedItemId, selectedRecipientId, heldOriginItemIds, detailOpen, liveRank, chat, appliedPatchCount,
     busy, toast, activeRankings, activeExplanation,
     ingest, loadCanned, openItem, closeDetail, selectRecipient, dispatch,
     callRecipient, logManualCall,

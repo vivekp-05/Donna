@@ -2,8 +2,8 @@
 // All calls hit the Vite dev proxy (/api → localhost:8787). No direct URLs.
 
 import type {
-  AgentConfig, CallLogEntry, Channel, DirectedCallResponse, Donation, EnrichedDonation,
-  HealthResponse, HistoryEvent, LiveLine, LiveResponse, ManagerReply,
+  AgentConfig, CallLogEntry, Channel, DirectedCallResponse, Donation, DonationItem,
+  EnrichedDonation, HealthResponse, HistoryEvent, LiveLine, LiveResponse, ManagerReply,
   ManualCallInput, RankResponse, RankedRecipient, Recipient, Weights,
 } from './types';
 
@@ -92,6 +92,12 @@ export const api = {
       method: 'POST',
       body: '{}',
     }),
+
+  // §K.1 — HOLD a pending item at the food bank instead of dispatching it (the
+  // "Add to inventory" path). 200 { item }; 404 unknown id, 409 unless pending.
+  holdItem: (itemId: string) =>
+    request<{ item: DonationItem }>(`/items/${itemId}/hold`, { method: 'POST', body: '{}' })
+      .then((r) => r.item),
 
   // §G.3 — human-logged call (no voice provider); recorded exactly like an agent
   // call but flagged manual. Same 404/409 rules. Returns { item, attempt }.

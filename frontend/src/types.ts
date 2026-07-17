@@ -6,7 +6,7 @@ export type Channel = 'voice' | 'sms' | 'email' | 'walk_in' | 'web_form';
 export type ItemCategory =
   | 'fresh_produce' | 'fruit' | 'canned' | 'dry_goods' | 'baked'
   | 'dairy' | 'meat' | 'prepared' | 'beverages' | 'other';
-export type ItemStatus = 'pending' | 'matched' | 'unplaceable';
+export type ItemStatus = 'pending' | 'matched' | 'unplaceable' | 'held';
 // `awaiting_triage`: parsed and scored but held for a human to approve the calls
 // (PRD §10). Inbound phone donations land here; only POST /donations/:id/approve
 // releases them.

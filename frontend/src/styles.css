@@ -106,6 +106,8 @@ body {
 .status-tag.placed, .status-tag.accepted, .status-tag.ok { color: var(--good-mute); }
 .status-tag.unplaceable, .status-tag.declined, .status-tag.bad { color: var(--bad-mute); }
 .status-tag.pending, .status-tag.no_answer, .status-tag.never { color: var(--text-faint); }
+/* §K.1 — held into inventory: store teal, matching the via-warehouse route color. */
+.status-tag.held { color: var(--flow-store); }
 
 /* ---------- app frame ---------- */
 .app { position: fixed; inset: 0; overflow: hidden; }
@@ -203,16 +205,21 @@ body {
   background: radial-gradient(ellipse 75% 75% at 50% 48%, transparent 55%, rgba(0,0,0,0.35) 100%);
 }
 
-/* Food-bank home base — quiet rotated-square diamond + label (display-only). */
+/* Food-bank home base — bolder rotated-square diamond, static emphasis ring, and
+   a heavier haloed label (§K.3). Display-only; no glow/gradient (§H). */
 .fb-marker { position: relative; }
+.fb-marker .fb-ring {
+  position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+  border-radius: 50%; border: 1px solid var(--border-2);
+}
 .fb-marker .fb-diamond {
-  position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
-  background: var(--panel); border: 1.5px solid var(--text-dim); transform: rotate(45deg);
+  position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+  background: var(--panel); border: 2px solid var(--text); transform: rotate(45deg);
 }
 .fb-marker .fb-label {
-  position: absolute; left: 11px; top: -4px; white-space: nowrap;
-  font: 650 10px var(--display); letter-spacing: 0.02em; color: var(--text-dim);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+  position: absolute; left: 20px; top: -5px; white-space: nowrap;
+  font: 650 12px var(--display); letter-spacing: 0.01em; color: var(--text);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.9);
 }
 
 /* Route-endpoint pulse ring (emphasized, accent) + failed-pickup ring (muted red).
@@ -228,6 +235,9 @@ body {
 }
 .rt-pulse.fail .rt-core { background: var(--bad-mute); }
 .rt-pulse.fail .rt-ring { border-color: var(--bad-mute); }
+/* §K.1 — inventory resting at the food bank: teal pulse. */
+.rt-pulse.inv .rt-core { background: var(--flow-store); }
+.rt-pulse.inv .rt-ring { border-color: var(--flow-store); }
 
 /* ---------- floating panels (opaque, hairline, no blur) ---------- */
 .feed, .detail, .network {
@@ -278,6 +288,7 @@ body {
 .icard.pending .icard-edge     { background: var(--warn-mute); }
 .icard.placed .icard-edge      { background: var(--good-mute); }
 .icard.unplaceable .icard-edge { background: var(--bad-mute); }
+.icard.held .icard-edge        { background: var(--flow-store); }
 .icard.unplaceable { background: var(--red-tint); }
 .icard.unplaceable:hover { background: rgba(201,138,138,0.09); }
 .icard.sel { border-color: var(--hot); }
@@ -296,6 +307,7 @@ body {
 .ic-placed { color: var(--good-mute); }
 .ic-dead { color: var(--bad-mute); }
 .ic-donor { color: var(--text-dim); }
+.ic-held { color: var(--flow-store); }
 /* matched card route glyph before "→ {recipient}" (§I.5); inherits ic-placed color */
 .l2-text .rt-glyph { vertical-align: -2px; margin-right: 2px; }
 
@@ -485,6 +497,8 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .pick input { accent-color: var(--hot); flex: 0 0 auto; margin: 0; }
 .pick-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pick-meta { margin-left: auto; flex: 0 0 auto; font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+/* §K.1 — "from inventory" qualifier on a held item in the call picker. */
+.pick-inv { font-weight: 600; color: var(--flow-store); }
 
 .seg-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .seg-opt { appearance: none; cursor: pointer; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-dim); border-radius: var(--radius-s); padding: 9px 6px; font: 600 12px var(--sans); transition: color .12s var(--ease), border-color .12s var(--ease); }
@@ -707,6 +721,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .vc-verdict.store  { color: var(--flow-store); }
 .vc-copy { margin-top: 5px; font: 400 12px/1.4 var(--sans); color: var(--text-faint); }
 .vc-dest { margin-top: 4px; font: 500 12px/1.3 var(--sans); color: var(--text-dim); }
+/* §K.1 — quiet "Add to inventory" secondary action on a pending gate card. */
+.vc-hold { margin-top: 9px; width: 100%; padding: 6px 10px; font-size: 12px; }
 
 .summary-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .schip {
@@ -714,6 +730,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   color: var(--text-dim); font-variant-numeric: tabular-nums;
   border: 1px solid var(--border); border-radius: var(--radius-chip); padding: 6px 10px;
 }
+/* §K.1 — inventory count chip in the store teal. */
+.schip.inventory { color: var(--flow-store); border-color: rgba(79,179,169,0.4); }
 
 .stage-controls {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;

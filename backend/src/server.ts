@@ -10,7 +10,7 @@ import { LlmMock } from './core/agents/llmMock.js';
 import type { VoiceProvider } from './core/voice/caller.js';
 import {
   ingestDonation, dispatchDonation, rankItem, machineDeps,
-  directedCall, manualCall,
+  directedCall, manualCall, holdItem,
   type PipelineDeps, type DirectedCallError, type ManualCallInput,
 } from './core/pipeline.js';
 import type { CallOutcome } from './core/types.js';
@@ -318,6 +318,25 @@ export function buildApp(resolve: Resolver): Hono {
     recipient_not_found: 'recipient not found',
     item_not_pending: 'item is not pending',
   };
+
+  // §K.1 — take a pending item into the food bank's inventory instead of
+  // dispatching it. 404 unknown item, 409 unless the item is pending.
+  app.post('/api/items/:id/hold', async (c) => {
+    const itemId = c.req.param('id');
+    try {
+      const deps = await resolve();
+      const result = await holdItem(itemId, deps);
+      if (!result.ok) {
+        return c.json(
+          { error: result.error === 'item_not_pending' ? 'item is not pending' : 'item not found' },
+          result.error === 'item_not_pending' ? 409 : 404,
+        );
+      }
+      return c.json({ item: result.item });
+    } catch (e) {
+      return c.json({ error: errMsg(e) }, 500);
+    }
+  });
 
   // §G.3.1 — directed agent call to a chosen recipient, bypassing ranking.
   app.post('/api/items/:itemId/call/:recipientId', async (c) => {

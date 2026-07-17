@@ -13,12 +13,21 @@ import {
 import { draftOffer } from './agents/offer.js';
 import { memoryHint } from './agents/memoryHint.js';
 import { rankRecipients } from './scoring/engine.js';
+import type { Geocoder } from './geo.js';
 
 export interface PipelineDeps {
   store: MemoryStore;
   llm: LlmClient;
   voice: VoiceProvider;
   config: AgentConfig;
+  /**
+   * §K.2 — resolves a spoken pickup address to coordinates when intake parsed a
+   * `pickupLocation` string but no lat/lng. Optional: when absent, geocoding is
+   * skipped and coords stay whatever intake produced. Composition roots
+   * (main.ts / worker.ts) wire `nominatimGeocode`; tests inject a stub so vitest
+   * never hits the network.
+   */
+  geocode?: Geocoder;
 }
 
 // parse (Agent 1) → build Donation with ids → store → status 'scored'
@@ -27,6 +36,20 @@ export async function ingestDonation(
   deps: PipelineDeps,
 ): Promise<Donation> {
   const parsed = await parseDonation(input.rawText, input.channel, deps.llm);
+
+  // §K.2 — the caller gave an address but no coordinates: geocode it so the map
+  // pins the exact spot. Skipped when no geocoder is wired (tests) or when
+  // intake already produced coords (the canned/mock path always has them, so the
+  // offline demo never touches the network).
+  let pickupLat = parsed.pickupLat;
+  let pickupLng = parsed.pickupLng;
+  if (parsed.pickupLocation && pickupLat == null && pickupLng == null && deps.geocode) {
+    const point = await deps.geocode(parsed.pickupLocation);
+    if (point) {
+      pickupLat = point.lat;
+      pickupLng = point.lng;
+    }
+  }
 
   const donationId = crypto.randomUUID();
   const items: DonationItem[] = parsed.items.map((p) => ({
@@ -50,8 +73,8 @@ export async function ingestDonation(
     status: 'scored',
     donorName: parsed.donorName,
     pickupLocation: parsed.pickupLocation,
-    pickupLat: parsed.pickupLat,
-    pickupLng: parsed.pickupLng,
+    pickupLat,
+    pickupLng,
     items,
   };
 
@@ -76,6 +99,38 @@ export async function finishDonationIfResolved(
   donation.status = 'resolved';
   await deps.store.saveDonation(donation);
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// §K.1 — inventory hold. A coordinator can take a pending item into the food
+// bank's inventory instead of dispatching it, then send it out later via a
+// directed/manual call. `held` is a resting status: dispatch loops skip it (it
+// is not `pending`) and the finish check treats a donation with only held items
+// as resolvable, so a hold never strands a donation at `dispatching`.
+// ---------------------------------------------------------------------------
+export type HoldError = 'item_not_found' | 'item_not_pending';
+export type HoldResult =
+  | { ok: true; item: DonationItem }
+  | { ok: false; error: HoldError };
+
+/**
+ * Move a pending item to `held`. 404 (unknown item) and 409 (not pending)
+ * surface as `{ ok: false, error }` so the HTTP layer can map them. Clears any
+ * in-flight `dialing` marker — an item on the shelf is not on the phone.
+ */
+export async function holdItem(
+  itemId: string,
+  deps: Pick<PipelineDeps, 'store'>,
+): Promise<HoldResult> {
+  const located = locateItem(await deps.store.listDonations(), itemId);
+  if (!located) return { ok: false, error: 'item_not_found' };
+  const { item, donation } = located;
+  if (item.status !== 'pending') return { ok: false, error: 'item_not_pending' };
+
+  item.status = 'held';
+  item.dialing = undefined;
+  await deps.store.saveDonation(donation);
+  return { ok: true, item };
 }
 
 /**
@@ -227,7 +282,12 @@ export async function directedCall(
   const recipient = await deps.store.getRecipient(recipientId);
   if (!recipient) return { ok: false, error: 'recipient_not_found' };
   const { item, donation } = located;
-  if (item.status !== 'pending') return { ok: false, error: 'item_not_pending' };
+  // §K.1 — a held item can be sent out via a directed call ("send it out
+  // later"): accept `held` as well as `pending`. On accept it becomes matched;
+  // on decline recordAttempt leaves the status untouched, so it stays held.
+  if (item.status !== 'pending' && item.status !== 'held') {
+    return { ok: false, error: 'item_not_pending' };
+  }
 
   const offer = await draftOffer(
     item, donation, recipient, memoryHint(recipient, item), deps.llm,
@@ -296,7 +356,11 @@ export async function manualCall(
   const recipient = await deps.store.getRecipient(recipientId);
   if (!recipient) return { ok: false, error: 'recipient_not_found' };
   const { item, donation } = located;
-  if (item.status !== 'pending') return { ok: false, error: 'item_not_pending' };
+  // §K.1 — held items can be logged out of inventory too (accept + decline). A
+  // decline leaves applyAttempt's status untouched, so a held item stays held.
+  if (item.status !== 'pending' && item.status !== 'held') {
+    return { ok: false, error: 'item_not_pending' };
+  }
 
   const notes = typeof input.notes === 'string' ? input.notes.trim() : '';
   const attempt: CallAttempt = {

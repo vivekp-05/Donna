@@ -269,10 +269,14 @@ function mockCallback(input: Record<string, unknown>): string {
   lines.push(`Hi ${donorName || 'there'}, this is Donna with an update on your donation.`);
 
   const placed = items.filter((i) => i.status === 'matched');
-  const unplaced = items.filter((i) => i.status !== 'matched');
+  const held = items.filter((i) => i.status === 'held');
+  const unplaced = items.filter((i) => i.status !== 'matched' && i.status !== 'held');
 
   for (const i of placed) {
     lines.push(`We placed ${fmtLbs(i.qtyLbs)} of ${i.item} with ${i.recipientName || 'a partner agency'}.`);
+  }
+  for (const i of held) {
+    lines.push(`We've taken ${fmtLbs(i.qtyLbs)} of ${i.item} into our inventory at the food bank.`);
   }
   for (const i of unplaced) {
     lines.push(
@@ -281,9 +285,13 @@ function mockCallback(input: Record<string, unknown>): string {
     );
   }
 
-  if (placed.length && !unplaced.length) {
-    lines.push('Thank you so much — everything found a good home today.');
-  } else if (placed.length) {
+  if (!unplaced.length) {
+    if (placed.length) {
+      lines.push('Thank you so much — everything found a good home today.');
+    } else {
+      lines.push("Thank you — these are safe in our inventory and we'll place them soon.");
+    }
+  } else if (placed.length || held.length) {
     lines.push('Thank you for the donation; we routed everything we could to neighbors in need.');
   } else {
     lines.push('We are sorry we could not place these this time, and appreciate you thinking of us.');

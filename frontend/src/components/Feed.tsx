@@ -14,13 +14,15 @@ const STATE_LABEL: Record<ItemState, string> = {
   pending: 'Pending',
   placed: 'Placed',
   unplaceable: 'No takers',
+  held: 'In inventory',
 };
 
-type ItemState = 'pending' | 'placed' | 'unplaceable';
+type ItemState = 'pending' | 'placed' | 'unplaceable' | 'held';
 
 function itemState(it: DonationItem): ItemState {
   if (it.status === 'matched') return 'placed';
   if (it.status === 'unplaceable') return 'unplaceable';
+  if (it.status === 'held') return 'held';
   return 'pending';
 }
 
@@ -92,6 +94,8 @@ function ItemCard({ d, it, recipientName, selected, onOpen }: {
     line2 = <span className="l2-text ic-placed"><Route size={12} className="rt-glyph" /> → {recipientName || 'placed'}</span>;
   } else if (state === 'unplaceable') {
     line2 = <span className="l2-text ic-dead">no takers — donor notified</span>;
+  } else if (state === 'held') {
+    line2 = <span className="l2-text ic-held">held in inventory at the food bank</span>;
   } else {
     line2 = <span className="l2-text ic-donor">{d.donorName || 'Unknown donor'}</span>;
   }

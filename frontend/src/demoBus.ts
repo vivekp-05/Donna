@@ -27,6 +27,9 @@ export interface DemoBus {
   focusRecipientIds: string[];
   /** A pickup that found no takers — pulsing muted-red ring, no route. */
   failedAtPickup?: boolean;
+  /** §K.1 — one or more items held into inventory: teal pulse dot resting AT the
+   *  food bank (the leg pickup→food-bank is drawn as a normal store-leg1 route). */
+  heldAtFoodBank?: boolean;
 }
 
 function initial(): DemoBus {

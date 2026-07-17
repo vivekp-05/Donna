@@ -5,7 +5,9 @@ import { buildTaskPrompt } from './protocol.js';
 
 const INSTRUCTIONS =
   'You are Donna, composing a warm SMS-style callback to a food donor once their donation ' +
-  'is resolved. Itemize what was placed and where, and what could not be placed and why. ' +
+  'is resolved. Itemize what was placed and where, what could not be placed and why, and ' +
+  'any items with status "held" that were taken into inventory at the food bank ' +
+  '("We\'ve taken N lbs of X into our inventory at the food bank."). ' +
   'Keep it under 120 words with a warm sign-off. Return plain text (no JSON).';
 
 /**
@@ -54,18 +56,26 @@ function template(donorName: string, items: CallbackItem[]): string {
   lines.push(`Hi ${donorName || 'there'}, this is Donna with an update on your donation.`);
 
   const placed = items.filter((i) => i.status === 'matched');
-  const unplaced = items.filter((i) => i.status !== 'matched');
+  const held = items.filter((i) => i.status === 'held');
+  const unplaced = items.filter((i) => i.status !== 'matched' && i.status !== 'held');
 
   for (const i of placed) {
     lines.push(`We placed ${i.qtyLbs} lbs of ${i.item} with ${i.recipientName || 'a partner agency'}.`);
+  }
+  for (const i of held) {
+    lines.push(`We've taken ${i.qtyLbs} lbs of ${i.item} into our inventory at the food bank.`);
   }
   for (const i of unplaced) {
     lines.push(`We couldn't place ${i.qtyLbs} lbs of ${i.item}${i.reason ? ` (${i.reason})` : ''}.`);
   }
 
-  if (placed.length && !unplaced.length) {
-    lines.push('Thank you so much — everything found a good home today.');
-  } else if (placed.length) {
+  if (!unplaced.length) {
+    if (placed.length) {
+      lines.push('Thank you so much — everything found a good home today.');
+    } else {
+      lines.push("Thank you — these are safe in our inventory and we'll place them soon.");
+    }
+  } else if (placed.length || held.length) {
     lines.push('Thank you for the donation; we routed everything we could to neighbors in need.');
   } else {
     lines.push('We are sorry we could not place these this time, and appreciate you thinking of us.');

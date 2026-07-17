@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import type {
-  CallOutcome, Donation, DonationItem, EnrichedDonation, LiveCall, Mode, Recipient,
+  CallOutcome, Donation, DonationItem, EnrichedDonation, ItemStatus, LiveCall, Mode, Recipient,
 } from '../types';
 import type { DemoBus, DemoRoute } from '../demoBus';
 import { setDemoBus, resetDemoBus } from '../demoBus';
@@ -166,9 +166,9 @@ export function DemoStage(): React.JSX.Element {
     skipRef.current = false;
     const d = enr.donation;
     if (d.pickupLat != null && d.pickupLng != null) {
-      setDemoBus({ active: true, pickup: { lat: d.pickupLat, lng: d.pickupLng, label: d.donorName ?? 'Pickup' }, routes: [], focusRecipientIds: [], failedAtPickup: false });
+      setDemoBus({ active: true, pickup: { lat: d.pickupLat, lng: d.pickupLng, label: d.donorName ?? 'Pickup' }, routes: [], focusRecipientIds: [], failedAtPickup: false, heldAtFoodBank: false });
     } else {
-      setDemoBus({ active: true, routes: [], focusRecipientIds: [], failedAtPickup: false });
+      setDemoBus({ active: true, routes: [], focusRecipientIds: [], failedAtPickup: false, heldAtFoodBank: false });
     }
     setPhase('inbound');
     const lines = parseRaw(d.rawText);
@@ -199,6 +199,20 @@ export function DemoStage(): React.JSX.Element {
     const focus: string[] = [];
 
     for (const item of disp.items) {
+      // §K.1 — a held item gets NO outbound call replay: draw the pickup→food-bank
+      // leg (store-leg1 style) and leave a persistent teal pulse resting at the food
+      // bank, then mark the card done (its IN INVENTORY label is status-driven).
+      if (item.status === 'held') {
+        if (pickupPt) {
+          routes.push({ id: `${item.id}-hold`, kind: 'store-leg1', from: pickupPt, to: FB });
+          setDemoBus({ routes: [...routes], heldAtFoodBank: true });
+          await sleep(300); if (runIdRef.current !== rid) return;
+        } else {
+          setDemoBus({ heldAtFoodBank: true });
+        }
+        setReplayItemsDone((n) => n + 1);
+        continue;
+      }
       let accepted = false;
       for (const a of item.attempts) {
         // Each call is its own Skip unit: one Skip press fast-forwards ONLY this
@@ -297,6 +311,29 @@ export function DemoStage(): React.JSX.Element {
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 
+  // §K.1 — HOLD one pending item at the food bank (the "Add to inventory" gate
+  // action). Patch the staged donation locally so the card flips to IN INVENTORY,
+  // and if that leaves zero pending items there is nothing to dispatch — resolve
+  // the donation so the flow still proceeds to the callback.
+  async function holdOne(itemId: string) {
+    if (!enriched) return;
+    setErr(null);
+    try {
+      await api.holdItem(itemId);
+      const patched: EnrichedDonation = {
+        ...enriched,
+        donation: {
+          ...enriched.donation,
+          items: enriched.donation.items.map((i) =>
+            i.id === itemId ? { ...i, status: 'held' as ItemStatus } : i),
+        },
+      };
+      setEnriched(patched);
+      const pending = patched.donation.items.filter((i) => i.status === 'pending').length;
+      if (pending === 0) void approveDispatch();
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  }
+
   async function resetStage() {
     runIdRef.current++;
     skipRef.current = false;
@@ -389,7 +426,12 @@ export function DemoStage(): React.JSX.Element {
         {visibleItems > 0 && (
           <div className="vstrip">
             {items.slice(0, visibleItems).map((it, idx) => (
-              <VerdictCard key={it.id} item={it} resolved={dispatched && idx < replayItemsDone ? resolveItem(it) : null} />
+              <VerdictCard
+                key={it.id}
+                item={it}
+                resolved={dispatched && idx < replayItemsDone ? resolveItem(it) : null}
+                onHold={phase === 'gate' && it.status === 'pending' ? () => void holdOne(it.id) : undefined}
+              />
             ))}
           </div>
         )}
@@ -407,12 +449,23 @@ export function DemoStage(): React.JSX.Element {
               <button className="btn-primary" onClick={() => void runDemo()}>Run demo</button>
             </>
           )}
-          {phase === 'gate' && (
-            <>
-              <span className="muted">Held for review — nothing is called until you approve.</span>
-              <button className="btn-primary" onClick={() => void approveDispatch()}>Approve &amp; dispatch</button>
-            </>
-          )}
+          {phase === 'gate' && (() => {
+            const pending = items.filter((i) => i.status === 'pending').length;
+            const anyHeld = items.some((i) => i.status === 'held');
+            if (pending === 0) {
+              // §K.1 — every item held: nothing to dispatch; the donation resolves
+              // and the flow carries on to the callback on its own.
+              return <span className="muted">All items held in inventory.</span>;
+            }
+            return (
+              <>
+                <span className="muted">Held for review — nothing is called until you approve.</span>
+                <button className="btn-primary" onClick={() => void approveDispatch()}>
+                  Approve &amp; dispatch{anyHeld ? ` (${pending})` : ''}
+                </button>
+              </>
+            );
+          })()}
           {phase === 'done' && (
             <button className="btn-quiet" onClick={() => void resetStage()}>Reset</button>
           )}
@@ -536,8 +589,12 @@ function DraftPanel({ donation, draft }: { donation: Donation; draft: DraftView 
 
 /* --------------------------------------------------------- verdict card */
 
-function VerdictCard({ item, resolved }: { item: DonationItem; resolved: { ok: boolean; recipientName?: string } | null }) {
+function VerdictCard({ item, resolved, onHold }: {
+  item: DonationItem; resolved: { ok: boolean; recipientName?: string } | null;
+  onHold?: () => void;
+}) {
   const via = routeVia(item.hoursToSpoil);
+  const held = item.status === 'held';
   return (
     <div className="vcard">
       <div className="vc-top">
@@ -545,15 +602,24 @@ function VerdictCard({ item, resolved }: { item: DonationItem; resolved: { ok: b
         <span className="vc-qty">{item.qtyLbs.toLocaleString()} lbs</span>
       </div>
       <div className="vc-mid">
-        <span className={`vc-verdict ${via}`}>{via === 'store' ? 'STORE' : 'DIRECT'}</span>
-        {resolved && (
-          <span className={`status-tag ${resolved.ok ? 'placed' : 'unplaceable'}`}>
-            {resolved.ok ? 'PLACED' : 'NO TAKERS'}
-          </span>
+        {held ? (
+          <span className="status-tag held">IN INVENTORY</span>
+        ) : (
+          <>
+            <span className={`vc-verdict ${via}`}>{via === 'store' ? 'STORE' : 'DIRECT'}</span>
+            {resolved && (
+              <span className={`status-tag ${resolved.ok ? 'placed' : 'unplaceable'}`}>
+                {resolved.ok ? 'PLACED' : 'NO TAKERS'}
+              </span>
+            )}
+          </>
         )}
       </div>
-      <div className="vc-copy">{verdictCopy(item)}</div>
+      <div className="vc-copy">{held ? 'held in inventory at the food bank' : verdictCopy(item)}</div>
       {resolved?.ok && resolved.recipientName && <div className="vc-dest">→ {resolved.recipientName}</div>}
+      {onHold && (
+        <button className="btn-quiet vc-hold" onClick={onHold}>Add to inventory</button>
+      )}
     </div>
   );
 }
@@ -562,11 +628,13 @@ function VerdictCard({ item, resolved }: { item: DonationItem; resolved: { ok: b
 
 function SummaryChips({ donation }: { donation: Donation }) {
   const placed = donation.items.filter((i) => i.attempts.some((a) => a.outcome === 'accepted') || i.status === 'matched');
-  const unplaceable = donation.items.length - placed.length;
+  const held = donation.items.filter((i) => i.status === 'held');
+  const unplaceable = donation.items.length - placed.length - held.length;
   const lbs = placed.reduce((s, i) => s + i.qtyLbs, 0);
   return (
     <div className="summary-chips">
       <span className="schip">{placed.length} placed</span>
+      {held.length > 0 && <span className="schip inventory">{held.length} in inventory</span>}
       <span className="schip">{unplaceable} unplaceable</span>
       <span className="schip">{lbs.toLocaleString()} lbs moved</span>
     </div>
@@ -629,7 +697,15 @@ function busFromLiveDonation(don: Donation, recipsById: Record<string, Recipient
   const routes: DemoRoute[] = [];
   const focus: string[] = [];
   let failed = false;
+  let held = false;
   for (const item of don.items) {
+    // §K.1 — held item: pickup→food-bank leg, then it rests as a teal pulse at the
+    // food bank. No outbound call, so nothing to focus.
+    if (item.status === 'held') {
+      held = true;
+      if (pickupPt) routes.push({ id: `${item.id}-hold`, kind: 'store-leg1', from: pickupPt, to: FB });
+      continue;
+    }
     for (const a of item.attempts) if (!focus.includes(a.recipientId)) focus.push(a.recipientId);
     const acc = item.attempts.find((a) => a.outcome === 'accepted');
     if (acc) {
@@ -651,6 +727,7 @@ function busFromLiveDonation(don: Donation, recipsById: Record<string, Recipient
     routes,
     focusRecipientIds: focus,
     failedAtPickup: failed,
+    heldAtFoodBank: held,
   };
 }
 

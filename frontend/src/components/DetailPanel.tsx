@@ -5,7 +5,7 @@ import { TERM_KEYS } from '../types';
 import { TERM_LABELS, HARDFAIL_LABELS, fmtHours, humanize } from '../theme';
 import { ArrowLeft, X, Snowflake, Gear, Chevron, Check } from '../icons';
 
-const STATUS_LABEL: Record<string, string> = { ok: 'Placed', bad: 'No takers', pending: 'Pending' };
+const STATUS_LABEL: Record<string, string> = { ok: 'Placed', bad: 'No takers', pending: 'Pending', held: 'In inventory' };
 const OUTCOME_LABEL: Record<string, string> = { accepted: 'Accepted', declined: 'Declined', no_answer: 'No answer' };
 
 export function DetailPanel() {
@@ -173,6 +173,7 @@ export function DetailPanel() {
 function statusClass(it: DonationItem): string {
   if (it.status === 'matched') return 'ok';
   if (it.status === 'unplaceable') return 'bad';
+  if (it.status === 'held') return 'held';
   return 'pending';
 }
 

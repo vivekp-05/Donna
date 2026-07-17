@@ -2,6 +2,7 @@ import { buildApp } from './server.js';
 import { D1Store } from './core/memory/d1Store.js';
 import { createLlm } from './core/agents/llm.js';
 import { createVoice } from './core/voice/caller.js';
+import { nominatimGeocode } from './core/geo.js';
 import { machineDeps, type PipelineDeps } from './core/pipeline.js';
 import { sweepStaleCalls } from './core/voice/dispatchMachine.js';
 import { CALL_REPORT_GRACE_MS } from './core/voice/vapi.js';
@@ -44,7 +45,7 @@ function wiring(env: Env) {
 async function resolve(env: Env): Promise<PipelineDeps> {
   const w = wiring(env);
   await w.store.init();
-  return { ...w, config: await w.store.getConfig() };
+  return { ...w, config: await w.store.getConfig(), geocode: nominatimGeocode };
 }
 
 export default {

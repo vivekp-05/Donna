@@ -1,0 +1,1485 @@
+{
+  "_note": "Phones are fictional placeholders (user's own numbers to be substituted). Real addresses/coords, researched 2026-07-17. For later ingestion into the recipient store.",
+  "pantries": [
+    {
+      "name": "Bayview TLC Family Resource Center",
+      "type": "pantry",
+      "address": "1601 Lane Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.731874,
+      "lng": -122.389734,
+      "phone": "+14155550301",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/600059"
+    },
+    {
+      "name": "El Colibri Community Market",
+      "type": "pantry",
+      "address": "498 Valencia Street, San Francisco, CA 94103",
+      "neighborhood": "Mission",
+      "lat": 37.765234,
+      "lng": -122.422108,
+      "phone": "+14155550302",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/600043"
+    },
+    {
+      "name": "The Richmond Neighborhood Center",
+      "type": "pantry",
+      "address": "741 30th Avenue, San Francisco, CA 94121",
+      "neighborhood": "Outer Richmond",
+      "lat": 37.775102,
+      "lng": -122.490303,
+      "phone": "+14155550303",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/600065"
+    },
+    {
+      "name": "Bayview Church of Christ Pantry",
+      "type": "pantry",
+      "address": "1239 Revere Avenue, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.727786,
+      "lng": -122.383501,
+      "phone": "+14155550304",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/BCOC"
+    },
+    {
+      "name": "Bayview HuntersPoint Foundation Community Market",
+      "type": "pantry",
+      "address": "1625 Carroll Ave, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.725056,
+      "lng": -122.393683,
+      "phone": "+14155550305",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/BHPF"
+    },
+    {
+      "name": "Bernal Heights Neighborhood Center Pantry",
+      "type": "pantry",
+      "address": "515 Cortland Ave, San Francisco, CA 94110",
+      "neighborhood": "Bernal Heights",
+      "lat": 37.739186,
+      "lng": -122.416143,
+      "phone": "+14155550306",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/BHNB"
+    },
+    {
+      "name": "Bethel A.M.E. Church Food Pantry",
+      "type": "pantry",
+      "address": "916 Laguna Street, San Francisco, CA 94115",
+      "neighborhood": "Western Addition",
+      "lat": 37.779926,
+      "lng": -122.426858,
+      "phone": "+14155550307",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/BAME"
+    },
+    {
+      "name": "Calvary Baptist Church Pantry",
+      "type": "pantry",
+      "address": "5655 Mission Street, San Francisco, CA 94112",
+      "neighborhood": "Crocker-Amazon",
+      "lat": 37.710279,
+      "lng": -122.447569,
+      "phone": "+14155550308",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CALV"
+    },
+    {
+      "name": "APA Family Support Services (Sunnydale)",
+      "type": "pantry",
+      "address": "1099 Sunnydale Avenue, San Francisco, CA 94134",
+      "neighborhood": "Visitacion Valley",
+      "lat": 37.710747,
+      "lng": -122.412169,
+      "phone": "+14155550309",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CSVP"
+    },
+    {
+      "name": "Casa de Barro Food Distribution Center",
+      "type": "pantry",
+      "address": "3811 Mission Street, San Francisco, CA 94110",
+      "neighborhood": "Bernal Heights",
+      "lat": 37.735823,
+      "lng": -122.424273,
+      "phone": "+14155550310",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CASA"
+    },
+    {
+      "name": "China Basin Community Market",
+      "type": "pantry",
+      "address": "1340 4th St, San Francisco, CA 94158",
+      "neighborhood": "Mission Bay",
+      "lat": 37.771401,
+      "lng": -122.391654,
+      "phone": "+14155550311",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CMCB"
+    },
+    {
+      "name": "Chinese Christian Mission Pantry",
+      "type": "pantry",
+      "address": "8-14 Ross Alley, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.79549,
+      "lng": -122.407367,
+      "phone": "+14155550312",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CCMU"
+    },
+    {
+      "name": "Christ for All Nations (CFAN)",
+      "type": "pantry",
+      "address": "465 Woolsey Street, San Francisco, CA 94134",
+      "neighborhood": "Portola",
+      "lat": 37.724221,
+      "lng": -122.406134,
+      "phone": "+14155550313",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CFAN"
+    },
+    {
+      "name": "Church Street Pantry",
+      "type": "pantry",
+      "address": "152 Church Street, San Francisco, CA 94114",
+      "neighborhood": "Duboce Triangle",
+      "lat": 37.768578,
+      "lng": -122.429382,
+      "phone": "+14155550314",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/WELC"
+    },
+    {
+      "name": "CityTeam San Francisco Food Pantry",
+      "type": "pantry",
+      "address": "164 6th Street, San Francisco, CA 94103",
+      "neighborhood": "SoMa",
+      "lat": 37.779956,
+      "lng": -122.407829,
+      "phone": "+14155550315",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CITY"
+    },
+    {
+      "name": "Cornerstone Evangelical Baptist Church Pantry",
+      "type": "pantry",
+      "address": "801 Silver Avenue, San Francisco, CA 94134",
+      "neighborhood": "Portola",
+      "lat": 37.729588,
+      "lng": -122.418333,
+      "phone": "+14155550316",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CEBC"
+    },
+    {
+      "name": "Cornerstone Missionary Baptist Church",
+      "type": "pantry",
+      "address": "6190 3rd Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.722528,
+      "lng": -122.395386,
+      "phone": "+14155550317",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/GPAC"
+    },
+    {
+      "name": "Covenant Presbyterian Church Food Pantry",
+      "type": "pantry",
+      "address": "321 Taraval Street, San Francisco, CA 94116",
+      "neighborhood": "Parkside/West Portal",
+      "lat": 37.743138,
+      "lng": -122.469532,
+      "phone": "+14155550318",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/COVP"
+    },
+    {
+      "name": "El Centro Bayview Pantry",
+      "type": "pantry",
+      "address": "1329 Evans Avenue, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.740009,
+      "lng": -122.383443,
+      "phone": "+14155550319",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/ECBP"
+    },
+    {
+      "name": "Excelsior Community Center",
+      "type": "pantry",
+      "address": "4468 Mission Street, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.726326,
+      "lng": -122.433884,
+      "phone": "+14155550320",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/ECCR"
+    },
+    {
+      "name": "First United Presbyterian Church Food Pantry",
+      "type": "pantry",
+      "address": "1740 Sloat Boulevard, San Francisco, CA 94132",
+      "neighborhood": "Lakeside",
+      "lat": 37.734381,
+      "lng": -122.491918,
+      "phone": "+14155550321",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/FUPC"
+    },
+    {
+      "name": "Florence Fang Community Farm",
+      "type": "pantry",
+      "address": "2 Diana Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.730738,
+      "lng": -122.39626,
+      "phone": "+14155550322",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/ACGN"
+    },
+    {
+      "name": "The Food Pantry at St. Gregory of Nyssa Episcopal Church",
+      "type": "pantry",
+      "address": "500 De Haro Street, San Francisco, CA 94107",
+      "neighborhood": "Potrero Hill",
+      "lat": 37.763255,
+      "lng": -122.40173,
+      "phone": "+14155550323",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/FPSG"
+    },
+    {
+      "name": "Full Life Christian Center",
+      "type": "pantry",
+      "address": "3535 Balboa St, San Francisco, CA 94121",
+      "neighborhood": "Outer Richmond",
+      "lat": 37.775452,
+      "lng": -122.496978,
+      "phone": "+14155550324",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/FLCC"
+    },
+    {
+      "name": "George Peabody Elementary Pantry",
+      "type": "pantry",
+      "address": "256 7th Avenue, San Francisco, CA 94118",
+      "neighborhood": "Inner Richmond",
+      "lat": 37.783754,
+      "lng": -122.46545,
+      "phone": "+14155550325",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/GPRN"
+    },
+    {
+      "name": "Grace Fellowship Community Church Pantry",
+      "type": "pantry",
+      "address": "3265 16th Street, San Francisco, CA 94103",
+      "neighborhood": "Mission",
+      "lat": 37.764451,
+      "lng": -122.425482,
+      "phone": "+14155550326",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/GFCC"
+    },
+    {
+      "name": "Grace United Methodist Church Pantry",
+      "type": "pantry",
+      "address": "2540 Taraval Street, San Francisco, CA 94116",
+      "neighborhood": "Parkside",
+      "lat": 37.742357,
+      "lng": -122.493308,
+      "phone": "+14155550327",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CUMC"
+    },
+    {
+      "name": "Haight Ashbury Food Program Pantry",
+      "type": "pantry",
+      "address": "1525 Waller Street, San Francisco, CA 94117",
+      "neighborhood": "Haight-Ashbury",
+      "lat": 37.768541,
+      "lng": -122.449045,
+      "phone": "+14155550328",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/HAFP"
+    },
+    {
+      "name": "Hayes Valley Food Pantry",
+      "type": "pantry",
+      "address": "403 Rose Street, San Francisco, CA 94102",
+      "neighborhood": "Hayes Valley",
+      "lat": 37.773696,
+      "lng": -122.421788,
+      "phone": "+14155550329",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/HAYE"
+    },
+    {
+      "name": "Heritage Homes Pantry",
+      "type": "pantry",
+      "address": "243 Rey Street, San Francisco, CA 94134",
+      "neighborhood": "Visitacion Valley",
+      "lat": 37.710099,
+      "lng": -122.412512,
+      "phone": "+14155550330",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/HHVV"
+    },
+    {
+      "name": "Holy Trinity Greek Orthodox Church Pantry",
+      "type": "pantry",
+      "address": "999 Brotherhood Way, San Francisco, CA 94132",
+      "neighborhood": "Lake Merced",
+      "lat": 37.713523,
+      "lng": -122.481762,
+      "phone": "+14155550331",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/HTOC"
+    },
+    {
+      "name": "Iglesia Presbiteriana de la Mision (Mission Presbyterian Church)",
+      "type": "pantry",
+      "address": "3261 23rd Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.753673,
+      "lng": -122.417724,
+      "phone": "+14155550332",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/LAIG"
+    },
+    {
+      "name": "Interfaith Food Pantry",
+      "type": "pantry",
+      "address": "1751 Sacramento Street, San Francisco, CA 94109",
+      "neighborhood": "Nob Hill",
+      "lat": 37.791317,
+      "lng": -122.421626,
+      "phone": "+14155550333",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/IFFP"
+    },
+    {
+      "name": "Jones Memorial United Methodist Church Pantry",
+      "type": "pantry",
+      "address": "1975 Post Street, San Francisco, CA 94115",
+      "neighborhood": "Japantown/Western Addition",
+      "lat": 37.78479,
+      "lng": -122.434254,
+      "phone": "+14155550334",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/JONE"
+    },
+    {
+      "name": "Kommune (formerly The Good Rural)",
+      "type": "pantry",
+      "address": "5845 Mission Street, San Francisco, CA 94112",
+      "neighborhood": "Crocker-Amazon",
+      "lat": 37.70899,
+      "lng": -122.45123,
+      "phone": "+14155550335",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/TGRP"
+    },
+    {
+      "name": "La Voz Latina Pantry",
+      "type": "pantry",
+      "address": "470 Ellis Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.784798,
+      "lng": -122.413908,
+      "phone": "+14155550336",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/LVOZ"
+    },
+    {
+      "name": "Presbyterian Church in Chinatown",
+      "type": "pantry",
+      "address": "925 Stockton St, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.794385,
+      "lng": -122.408253,
+      "phone": "+14155550337",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/PCLC"
+    },
+    {
+      "name": "MEI Food Pantry (Mary Elizabeth Inn)",
+      "type": "pantry",
+      "address": "1040 Bush Street, San Francisco, CA 94109",
+      "neighborhood": "Lower Nob Hill",
+      "lat": 37.789535,
+      "lng": -122.414336,
+      "phone": "+14155550338",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/MEIP"
+    },
+    {
+      "name": "Macedonia Missionary Baptist Church",
+      "type": "pantry",
+      "address": "2135 Sutter St, San Francisco, CA 94115",
+      "neighborhood": "Western Addition",
+      "lat": 37.785515,
+      "lng": -122.435546,
+      "phone": "+14155550339",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/MACE"
+    },
+    {
+      "name": "Mission Bay Church Pantry (Silver Avenue)",
+      "type": "pantry",
+      "address": "302 Silver Ave, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.727822,
+      "lng": -122.430722,
+      "phone": "+14155550340",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/MBCH"
+    },
+    {
+      "name": "Mission Neighborhood Centers Pantry",
+      "type": "pantry",
+      "address": "362 Capp St, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.761001,
+      "lng": -122.418529,
+      "phone": "+14155550341",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/MNBC"
+    },
+    {
+      "name": "Mission YMCA",
+      "type": "pantry",
+      "address": "4080 Mission St, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.732227,
+      "lng": -122.428003,
+      "phone": "+14155550342",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/MISY"
+    },
+    {
+      "name": "OMI Family Resource Center Pantry",
+      "type": "pantry",
+      "address": "1121 Plymouth Avenue, San Francisco, CA 94112",
+      "neighborhood": "Oceanview (OMI)",
+      "lat": 37.722323,
+      "lng": -122.456246,
+      "phone": "+14155550343",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/OFRC"
+    },
+    {
+      "name": "Oakdale Neighborhood Pantry",
+      "type": "pantry",
+      "address": "1065 Oakdale Avenue, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.728769,
+      "lng": -122.380303,
+      "phone": "+14155550344",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/DALE"
+    },
+    {
+      "name": "Presbyterian Church in Chinatown (PCC Second Pantry)",
+      "type": "pantry",
+      "address": "920 Sacramento Street, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.793175,
+      "lng": -122.408408,
+      "phone": "+14155550345",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/DCHF"
+    },
+    {
+      "name": "Potrero Hill Neighborhood House Pantry",
+      "type": "pantry",
+      "address": "953 De Haro St, San Francisco, CA 94107",
+      "neighborhood": "Potrero Hill",
+      "lat": 37.758296,
+      "lng": -122.400673,
+      "phone": "+14155550346",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/NABE"
+    },
+    {
+      "name": "Salvation Army Mission Corps Pantry",
+      "type": "pantry",
+      "address": "1325 Valencia Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.751652,
+      "lng": -122.420274,
+      "phone": "+14155550347",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/BCCP"
+    },
+    {
+      "name": "Richmond District YMCA Pantry",
+      "type": "pantry",
+      "address": "360 18th Avenue, San Francisco, CA 94121",
+      "neighborhood": "Central Richmond",
+      "lat": 37.781266,
+      "lng": -122.477027,
+      "phone": "+14155550348",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/RYMC"
+    },
+    {
+      "name": "Salvation Army South of Market Pantry (temporary location)",
+      "type": "pantry",
+      "address": "850 Harrison St, San Francisco, CA 94107",
+      "neighborhood": "SoMa",
+      "lat": 37.779953,
+      "lng": -122.400824,
+      "phone": "+14155550349",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SOMA"
+    },
+    {
+      "name": "Salvation Army Chinatown Corps Food Pantry",
+      "type": "pantry",
+      "address": "1450 Powell Street, San Francisco, CA 94133",
+      "neighborhood": "North Beach/Chinatown",
+      "lat": 37.798014,
+      "lng": -122.410057,
+      "phone": "+14155550350",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SACH"
+    },
+    {
+      "name": "Southeast Asian Community Center",
+      "type": "pantry",
+      "address": "875 O'Farrell Street, San Francisco, CA 94109",
+      "neighborhood": "Tenderloin",
+      "lat": 37.784773,
+      "lng": -122.419043,
+      "phone": "+14155550351",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SACC"
+    },
+    {
+      "name": "St. Agnes Catholic Church Food Pantry",
+      "type": "pantry",
+      "address": "1025 Masonic Ave, San Francisco, CA 94117",
+      "neighborhood": "Haight-Ashbury",
+      "lat": 37.771612,
+      "lng": -122.445963,
+      "phone": "+14155550352",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SCFP"
+    },
+    {
+      "name": "St. Aidan's Episcopal Church Food Pantry",
+      "type": "pantry",
+      "address": "101 Gold Mine Drive, San Francisco, CA 94131",
+      "neighborhood": "Diamond Heights",
+      "lat": 37.743456,
+      "lng": -122.437953,
+      "phone": "+14155550353",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SAEC"
+    },
+    {
+      "name": "St. Andrew Missionary Baptist Church Food Pantry",
+      "type": "pantry",
+      "address": "2565 Post St, San Francisco, CA 94115",
+      "neighborhood": "Western Addition",
+      "lat": 37.783583,
+      "lng": -122.443985,
+      "phone": "+14155550354",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/ANDR"
+    },
+    {
+      "name": "St. Anthony's Dining Room",
+      "type": "pantry",
+      "address": "121 Golden Gate Avenue, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.781848,
+      "lng": -122.41256,
+      "phone": "+14155550355",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SABB"
+    },
+    {
+      "name": "St. Dominic's Food Pantry",
+      "type": "pantry",
+      "address": "2390 Bush Street, San Francisco, CA 94115",
+      "neighborhood": "Lower Pacific Heights",
+      "lat": 37.787022,
+      "lng": -122.435753,
+      "phone": "+14155550356",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SDOM"
+    },
+    {
+      "name": "St. John's Presbyterian Church - Harvest Food Pantry",
+      "type": "pantry",
+      "address": "25 Lake Street, San Francisco, CA 94118",
+      "neighborhood": "Inner Richmond",
+      "lat": 37.786816,
+      "lng": -122.459629,
+      "phone": "+14155550357",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SJPC"
+    },
+    {
+      "name": "Sunset Neighborhood Beacon Center",
+      "type": "pantry",
+      "address": "3010 Noriega Street, San Francisco, CA 94122",
+      "neighborhood": "Outer Sunset",
+      "lat": 37.753462,
+      "lng": -122.495999,
+      "phone": "+14155550358",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/SMIN"
+    },
+    {
+      "name": "Temple United Methodist Church Food Pantry",
+      "type": "pantry",
+      "address": "65 Beverly Street, San Francisco, CA 94132",
+      "neighborhood": "Lakeside",
+      "lat": 37.717233,
+      "lng": -122.471711,
+      "phone": "+14155550359",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/TUMC"
+    },
+    {
+      "name": "The Father's House Pantry",
+      "type": "pantry",
+      "address": "269 Zoo Road, San Francisco, CA 94132",
+      "neighborhood": "Lake Merced",
+      "lat": 37.729556,
+      "lng": -122.502268,
+      "phone": "+14155550360",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/TFHC"
+    },
+    {
+      "name": "The Women's Building Community Resource Center",
+      "type": "pantry",
+      "address": "3543 18th Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.761427,
+      "lng": -122.42261,
+      "phone": "+14155550361",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/WBIF"
+    },
+    {
+      "name": "Visitacion Valley Baptist Church Pantry",
+      "type": "pantry",
+      "address": "45 Leland Avenue, San Francisco, CA 94134",
+      "neighborhood": "Visitacion Valley",
+      "lat": 37.711458,
+      "lng": -122.404642,
+      "phone": "+14155550362",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/VCBC"
+    },
+    {
+      "name": "Rosa Parks SFP (senior food box site)",
+      "type": "pantry",
+      "address": "1280 Webster St, San Francisco, CA 94115",
+      "neighborhood": "Western Addition/Fillmore",
+      "lat": 37.78234,
+      "lng": -122.430217,
+      "phone": "+14155550363",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/WEFP"
+    },
+    {
+      "name": "Western Addition Community Market",
+      "type": "pantry",
+      "address": "1239 Turk St, San Francisco, CA 94115",
+      "neighborhood": "Western Addition",
+      "lat": 37.780658,
+      "lng": -122.429423,
+      "phone": "+14155550364",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/CMWA"
+    },
+    {
+      "name": "Western Addition Family Resource Center Pantry",
+      "type": "pantry",
+      "address": "1530 Buchanan Street, San Francisco, CA 94115",
+      "neighborhood": "Japantown/Western Addition",
+      "lat": 37.784239,
+      "lng": -122.429175,
+      "phone": "+14155550365",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/WAFP"
+    },
+    {
+      "name": "Youth With A Mission (YWAM) Food Pantry",
+      "type": "pantry",
+      "address": "357 Ellis Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.784689,
+      "lng": -122.412016,
+      "phone": "+14155550366",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/YWAM"
+    },
+    {
+      "name": "Armstrong Senior Housing SFP (senior food box site)",
+      "type": "pantry",
+      "address": "5600 3rd St, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.726909,
+      "lng": -122.393748,
+      "phone": "+14155550367",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700003"
+    },
+    {
+      "name": "BH 18th St SFP (senior food box site)",
+      "type": "pantry",
+      "address": "3850 18th St, San Francisco, CA 94114",
+      "neighborhood": "Castro/Mission Dolores",
+      "lat": 37.761303,
+      "lng": -122.429491,
+      "phone": "+14155550368",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700007"
+    },
+    {
+      "name": "Chinatown SFP (senior food box site)",
+      "type": "pantry",
+      "address": "838 Pacific Ave, San Francisco, CA 94133",
+      "neighborhood": "Chinatown",
+      "lat": 37.796656,
+      "lng": -122.409453,
+      "phone": "+14155550369",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700081"
+    },
+    {
+      "name": "Edgewood Center SFP (senior food box site)",
+      "type": "pantry",
+      "address": "1801 Vicente St, San Francisco, CA 94116",
+      "neighborhood": "Parkside",
+      "lat": 37.738764,
+      "lng": -122.486291,
+      "phone": "+14155550370",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700006"
+    },
+    {
+      "name": "St. Anthony's Emergency Food Pantry & Soup Kitchen",
+      "type": "pantry",
+      "address": "150 Golden Gate Ave, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.782217,
+      "lng": -122.413228,
+      "phone": "+14155550371",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/416118"
+    },
+    {
+      "name": "Salvation Army - Yerba Buena SFP (senior food box site)",
+      "type": "pantry",
+      "address": "360 4th St, San Francisco, CA 94107",
+      "neighborhood": "SoMa",
+      "lat": 37.781355,
+      "lng": -122.400468,
+      "phone": "+14155550372",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700011"
+    },
+    {
+      "name": "Stonestown SFP (senior food box site)",
+      "type": "pantry",
+      "address": "501 Buckingham Way, San Francisco, CA 94132",
+      "neighborhood": "Stonestown",
+      "lat": 37.72974,
+      "lng": -122.479095,
+      "phone": "+14155550373",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/416333"
+    },
+    {
+      "name": "Third Baptist Church SFP (senior food box site)",
+      "type": "pantry",
+      "address": "1399 McAllister St, San Francisco, CA 94115",
+      "neighborhood": "Western Addition/Fillmore",
+      "lat": 37.77786,
+      "lng": -122.43477,
+      "phone": "+14155550374",
+      "source": "https://foodlocator.sfmfoodbank.org/en/site/700002"
+    },
+    {
+      "name": "Salvation Army All Nations Corps Pantry",
+      "type": "pantry",
+      "address": "4000 19th Ave, San Francisco, CA 94132",
+      "neighborhood": "Lake Merced/Stonestown",
+      "lat": 37.71582,
+      "lng": -122.470962,
+      "phone": "+14155550375",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=1120093"
+    },
+    {
+      "name": "Meals on Wheels San Francisco (Home-Delivered Groceries partner)",
+      "type": "community_agency",
+      "address": "2230 Jerrold Ave, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.744977,
+      "lng": -122.400124,
+      "phone": "+14155550376",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=1140186"
+    },
+    {
+      "name": "Homeless Prenatal Program",
+      "type": "community_agency",
+      "address": "2500 18th St, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.762152,
+      "lng": -122.407579,
+      "phone": "+14155550377",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=1204871"
+    },
+    {
+      "name": "Mariposa Gardens (supportive-housing pantry)",
+      "type": "community_agency",
+      "address": "2445 Mariposa St, San Francisco, CA 94110",
+      "neighborhood": "Mission/Potrero",
+      "lat": 37.763081,
+      "lng": -122.407765,
+      "phone": "+14155550378",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=1230079"
+    },
+    {
+      "name": "CLC Bayview Pantry",
+      "type": "pantry",
+      "address": "2142 Jerrold Ave, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.744475,
+      "lng": -122.399237,
+      "phone": "+14155550379",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=1234673"
+    },
+    {
+      "name": "North Beach Citizens",
+      "type": "community_agency",
+      "address": "1034 Kearny St, San Francisco, CA 94133",
+      "neighborhood": "North Beach",
+      "lat": 37.797702,
+      "lng": -122.405325,
+      "phone": "+14155550380",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=746181"
+    },
+    {
+      "name": "Francis of Assisi Community (senior housing pantry)",
+      "type": "community_agency",
+      "address": "145 Guerrero St, San Francisco, CA 94103",
+      "neighborhood": "Mission Dolores",
+      "lat": 37.769508,
+      "lng": -122.424417,
+      "phone": "+14155550381",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=822789"
+    },
+    {
+      "name": "Mercy Terrace Apartments (senior housing pantry)",
+      "type": "community_agency",
+      "address": "333 Baker St, San Francisco, CA 94117",
+      "neighborhood": "NoPa/Western Addition",
+      "lat": 37.773985,
+      "lng": -122.441286,
+      "phone": "+14155550382",
+      "source": "https://volunteering.sfmfoodbank.org/need/detail/?need_id=889425"
+    },
+    {
+      "name": "APA Family Support Services (Visitacion Valley)",
+      "type": "pantry",
+      "address": "50 Raymond Avenue, San Francisco, CA 94134",
+      "neighborhood": "Visitacion Valley",
+      "lat": 37.712272,
+      "lng": -122.404212,
+      "phone": "+14155550383",
+      "source": "https://volunteering.sfmfoodbank.org/need/?q=&age=&agency_id=162714"
+    },
+    {
+      "name": "Lafayette RNC Pantry (Lafayette Elementary)",
+      "type": "pantry",
+      "address": "4545 Anza Street, San Francisco, CA 94121",
+      "neighborhood": "Outer Richmond",
+      "lat": 37.777092,
+      "lng": -122.496883,
+      "phone": "+14155550384",
+      "source": "https://sf.funcheap.com/city-guide/popup-free-food-pantries-sf/"
+    },
+    {
+      "name": "Mission Food Hub",
+      "type": "pantry",
+      "address": "701 Alabama Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.759997,
+      "lng": -122.411321,
+      "phone": "+14155550385",
+      "source": "https://www.missionfoodhub.org/"
+    },
+    {
+      "name": "Associated Students Food Pantry & Gator Groceries (SF State, Cesar Chavez Student Center)",
+      "type": "pantry",
+      "address": "1650 Holloway Ave, San Francisco, CA 94132",
+      "neighborhood": "Lake Merced (SFSU campus)",
+      "lat": 37.722087,
+      "lng": -122.478659,
+      "phone": "+14155550386",
+      "source": "https://asi.sfsu.edu/gator-groceries"
+    },
+    {
+      "name": "Rams Food Market (City College of San Francisco, Ocean Campus)",
+      "type": "pantry",
+      "address": "50 Frida Kahlo Way, San Francisco, CA 94112",
+      "neighborhood": "Ingleside/Sunnyside",
+      "lat": 37.727308,
+      "lng": -122.45077,
+      "phone": "+14155550387",
+      "source": "https://www.sfmfoodbank.org/news/san-francisco-examiner-city-college-opens-food-pantry-to-students/"
+    },
+    {
+      "name": "APA Family Support Services (Chinatown)",
+      "type": "pantry",
+      "address": "518 Grant Avenue, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.791778,
+      "lng": -122.405651,
+      "phone": "+14155550388",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Bayanihan Equity Center",
+      "type": "community_agency",
+      "address": "616 Minna Street, San Francisco, CA 94103",
+      "neighborhood": "SoMa",
+      "lat": 37.77853,
+      "lng": -122.411018,
+      "phone": "+14155550389",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Booker T. Washington Community Service Center",
+      "type": "pantry",
+      "address": "800 Presidio Avenue, San Francisco, CA 94115",
+      "neighborhood": "Western Addition",
+      "lat": 37.784331,
+      "lng": -122.446117,
+      "phone": "+14155550390",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Chinatown YMCA",
+      "type": "pantry",
+      "address": "855 Sacramento Street, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.7932,
+      "lng": -122.40689,
+      "phone": "+14155550391",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Curry Senior Center",
+      "type": "community_agency",
+      "address": "520 Turk Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.782406,
+      "lng": -122.417784,
+      "phone": "+14155550392",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "District 10 Community Market",
+      "type": "pantry",
+      "address": "5030 3rd Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.733012,
+      "lng": -122.391538,
+      "phone": "+14155550393",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Farming Hope: Refettorio San Francisco",
+      "type": "pantry",
+      "address": "690 Van Ness Avenue, San Francisco, CA 94102",
+      "neighborhood": "Civic Center",
+      "lat": 37.781859,
+      "lng": -122.42022,
+      "phone": "+14155550394",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Mission Action: Casa Colibri",
+      "type": "pantry",
+      "address": "5630 Mission Street, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.711133,
+      "lng": -122.447137,
+      "phone": "+14155550395",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Mission Action: The Little Market (El Mercadito)",
+      "type": "pantry",
+      "address": "1050 South Van Ness Avenue, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.756479,
+      "lng": -122.416961,
+      "phone": "+14155550396",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "San Francisco Housing Development Corporation",
+      "type": "community_agency",
+      "address": "4439 3rd Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.737611,
+      "lng": -122.389622,
+      "phone": "+14155550397",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Self-Help for the Elderly (Excelsior)",
+      "type": "community_agency",
+      "address": "5050 Mission Street, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.717182,
+      "lng": -122.440587,
+      "phone": "+14155550398",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Self-Help for the Elderly (Sunset)",
+      "type": "community_agency",
+      "address": "3133 Taraval Street, San Francisco, CA 94116",
+      "neighborhood": "Parkside/Sunset",
+      "lat": 37.741797,
+      "lng": -122.499875,
+      "phone": "+14155550399",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Glide Foundation (Glide Memorial United Methodist Church)",
+      "type": "pantry",
+      "address": "330 Ellis Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.785327,
+      "lng": -122.411717,
+      "phone": "+14155550400",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "Mother Brown's Dining Room",
+      "type": "community_agency",
+      "address": "2111 Jennings Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview-Hunters Point",
+      "lat": 37.72673,
+      "lng": -122.388669,
+      "phone": "+14155550401",
+      "source": "https://www.sfhsa.org/services/food/free-food-locations"
+    },
+    {
+      "name": "San Francisco-Marin Food Bank (SF warehouse)",
+      "type": "community_agency",
+      "address": "900 Pennsylvania Avenue, San Francisco, CA 94107",
+      "neighborhood": "Potrero Hill",
+      "lat": 37.754398,
+      "lng": -122.39351,
+      "phone": "+14155550402",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Mission Bay Community Church",
+      "type": "pantry",
+      "address": "35 San Juan Avenue, San Francisco, CA 94112",
+      "neighborhood": "Mission Terrace",
+      "lat": 37.724234,
+      "lng": -122.43598,
+      "phone": "+14155550403",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Salvation Army San Francisco (Harbor Light)",
+      "type": "community_agency",
+      "address": "1275 Harrison Street, San Francisco, CA 94103",
+      "neighborhood": "SoMa",
+      "lat": 37.77263,
+      "lng": -122.409659,
+      "phone": "+14155550404",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "CUESA (Ferry Plaza Farmers Market food access)",
+      "type": "community_agency",
+      "address": "1 Ferry Building, San Francisco, CA 94111",
+      "neighborhood": "Embarcadero",
+      "lat": 37.795549,
+      "lng": -122.393475,
+      "phone": "+14155550405",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "SF Human Services Agency - Mission Street Office",
+      "type": "community_agency",
+      "address": "1235 Mission Street, San Francisco, CA 94103",
+      "neighborhood": "SoMa",
+      "lat": 37.776905,
+      "lng": -122.413711,
+      "phone": "+14155550406",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Community-Campus Partnerships for Health Food Distribution",
+      "type": "pantry",
+      "address": "3333 California Street, San Francisco, CA 94118",
+      "neighborhood": "Presidio Heights",
+      "lat": 37.786045,
+      "lng": -122.44821,
+      "phone": "+14155550407",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Compass Community Services",
+      "type": "community_agency",
+      "address": "995 Market Street, San Francisco, CA 94103",
+      "neighborhood": "Mid-Market",
+      "lat": 37.782395,
+      "lng": -122.410298,
+      "phone": "+14155550408",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Evergreen Baptist Church Pantry",
+      "type": "pantry",
+      "address": "6242 3rd Street, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.721824,
+      "lng": -122.395709,
+      "phone": "+14155550409",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Feed the Need",
+      "type": "pantry",
+      "address": "1374 Donner Avenue, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.721998,
+      "lng": -122.389605,
+      "phone": "+14155550410",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Food Runners",
+      "type": "community_agency",
+      "address": "2579 Washington Street, San Francisco, CA 94115",
+      "neighborhood": "Pacific Heights",
+      "lat": 37.791308,
+      "lng": -122.43558,
+      "phone": "+14155550411",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Foursquare Gospel Church Pantry",
+      "type": "pantry",
+      "address": "754 14th Street, San Francisco, CA 94114",
+      "neighborhood": "Duboce Triangle",
+      "lat": 37.767768,
+      "lng": -122.430359,
+      "phone": "+14155550412",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Free The Need",
+      "type": "pantry",
+      "address": "827 Joost Avenue, San Francisco, CA 94127",
+      "neighborhood": "Sunnyside",
+      "lat": 37.732178,
+      "lng": -122.454122,
+      "phone": "+14155550413",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Geneva United Methodist Church Pantry",
+      "type": "pantry",
+      "address": "1261 Geneva Avenue, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.713607,
+      "lng": -122.435164,
+      "phone": "+14155550414",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Hunters Point Food Pantry - GIRLS 2000",
+      "type": "pantry",
+      "address": "718 Kirkwood Avenue, San Francisco, CA 94124",
+      "neighborhood": "Hunters Point",
+      "lat": 37.738704,
+      "lng": -122.390897,
+      "phone": "+14155550415",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Iglesia Bautista Balboa Eben-ezer Pantry",
+      "type": "pantry",
+      "address": "39 Amazon Avenue, San Francisco, CA 94112",
+      "neighborhood": "Crocker-Amazon/Excelsior",
+      "lat": 37.717187,
+      "lng": -122.439677,
+      "phone": "+14155550416",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Ingleside Community Center",
+      "type": "pantry",
+      "address": "1345 Ocean Avenue, San Francisco, CA 94112",
+      "neighborhood": "Ingleside",
+      "lat": 37.72375,
+      "lng": -122.456885,
+      "phone": "+14155550417",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Interfaith Coalition on Immigrant Rights Food Distribution",
+      "type": "community_agency",
+      "address": "965 Mission Street, San Francisco, CA 94103",
+      "neighborhood": "SoMa",
+      "lat": 37.781418,
+      "lng": -122.407574,
+      "phone": "+14155550418",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Leah's Pantry - Mission Street",
+      "type": "pantry",
+      "address": "3019 Mission Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.748758,
+      "lng": -122.417971,
+      "phone": "+14155550419",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Martin de Porres House of Hospitality",
+      "type": "community_agency",
+      "address": "225 Potrero Avenue, San Francisco, CA 94103",
+      "neighborhood": "Mission/Potrero",
+      "lat": 37.76663,
+      "lng": -122.407166,
+      "phone": "+14155550420",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Native American Health Center WIC San Francisco",
+      "type": "community_agency",
+      "address": "160 Capp Street, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.763888,
+      "lng": -122.418745,
+      "phone": "+14155550421",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "New Life Chinese Lutheran Church Pantry",
+      "type": "pantry",
+      "address": "395 Addison Street, San Francisco, CA 94131",
+      "neighborhood": "Glen Park",
+      "lat": 37.739888,
+      "lng": -122.435675,
+      "phone": "+14155550422",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Our Lady of Lourdes Parish Pantry",
+      "type": "pantry",
+      "address": "1715 Oakdale Avenue, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.735627,
+      "lng": -122.392652,
+      "phone": "+14155550423",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Pacific Bay Inn",
+      "type": "community_agency",
+      "address": "520 Jones Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.785942,
+      "lng": -122.412896,
+      "phone": "+14155550424",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Portola Baptist Church Pantry",
+      "type": "pantry",
+      "address": "225 Pioche Street, San Francisco, CA 94134",
+      "neighborhood": "Portola",
+      "lat": 37.728208,
+      "lng": -122.420795,
+      "phone": "+14155550425",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Potrero Hill Family Resource Center",
+      "type": "community_agency",
+      "address": "85 Turner Terrace, San Francisco, CA 94107",
+      "neighborhood": "Potrero Hill",
+      "lat": 37.756592,
+      "lng": -122.395019,
+      "phone": "+14155550426",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Project Open Hand",
+      "type": "pantry",
+      "address": "730 Polk Street, San Francisco, CA 94109",
+      "neighborhood": "Polk Gulch/Civic Center",
+      "lat": 37.783944,
+      "lng": -122.419211,
+      "phone": "+14155550427",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Raphael House of San Francisco",
+      "type": "community_agency",
+      "address": "1065 Sutter Street, San Francisco, CA 94109",
+      "neighborhood": "Lower Nob Hill",
+      "lat": 37.788086,
+      "lng": -122.418185,
+      "phone": "+14155550428",
+      "source": "https://foodpantries.org/ci/ca-san_francisco"
+    },
+    {
+      "name": "San Francisco Rescue Mission",
+      "type": "community_agency",
+      "address": "140 Turk Street, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.783206,
+      "lng": -122.411482,
+      "phone": "+14155550429",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "SF Community Fellowship Pantry",
+      "type": "pantry",
+      "address": "1195 Geneva Avenue, San Francisco, CA 94112",
+      "neighborhood": "Excelsior",
+      "lat": 37.714169,
+      "lng": -122.436427,
+      "phone": "+14155550430",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "Dr. Charles Drew College Preparatory Academy Pantry",
+      "type": "pantry",
+      "address": "50 Pomona St, San Francisco, CA 94124",
+      "neighborhood": "Bayview",
+      "lat": 37.731749,
+      "lng": -122.393546,
+      "phone": "+14155550431",
+      "source": "https://feedam.org/food-pantry/ca/san-francisco"
+    },
+    {
+      "name": "St. Francis' Episcopal Church Food Pantry",
+      "type": "pantry",
+      "address": "399 San Fernando Way, San Francisco, CA 94127",
+      "neighborhood": "Balboa Terrace/West Portal",
+      "lat": 37.73057,
+      "lng": -122.469525,
+      "phone": "+14155550432",
+      "source": "https://stfrancisepiscopal.org/food-pantry/"
+    },
+    {
+      "name": "West Bay Conference Center Food Pantry",
+      "type": "pantry",
+      "address": "1290 Fillmore Street, San Francisco, CA 94115",
+      "neighborhood": "Fillmore/Western Addition",
+      "lat": 37.78128,
+      "lng": -122.431896,
+      "phone": "+14155550433",
+      "source": "https://www.freefood.org/l/ca_san-francisco_west-bay-conference-center"
+    },
+    {
+      "name": "San Francisco City Impact Food Pantry",
+      "type": "pantry",
+      "address": "230 Jones St, San Francisco, CA 94102",
+      "neighborhood": "Tenderloin",
+      "lat": 37.783506,
+      "lng": -122.412222,
+      "phone": "+14155550434",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "Groceries for Seniors",
+      "type": "community_agency",
+      "address": "660 California St, San Francisco, CA 94108",
+      "neighborhood": "Chinatown",
+      "lat": 37.792794,
+      "lng": -122.405787,
+      "phone": "+14155550435",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "Mason Broadway Food Pantry",
+      "type": "pantry",
+      "address": "1430 Mason St, San Francisco, CA 94133",
+      "neighborhood": "North Beach",
+      "lat": 37.796728,
+      "lng": -122.411635,
+      "phone": "+14155550436",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Health Care for Homeless Vets",
+      "type": "community_agency",
+      "address": "401 3rd St, San Francisco, CA 94107",
+      "neighborhood": "SoMa",
+      "lat": 37.782492,
+      "lng": -122.397003,
+      "phone": "+14155550437",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "Juntos",
+      "type": "pantry",
+      "address": "1850 Mission St, San Francisco, CA 94103",
+      "neighborhood": "Mission",
+      "lat": 37.767398,
+      "lng": -122.420329,
+      "phone": "+14155550438",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "La Raza Community Resource Center",
+      "type": "community_agency",
+      "address": "474 Valencia St, San Francisco, CA 94103",
+      "neighborhood": "Mission",
+      "lat": 37.765359,
+      "lng": -122.422438,
+      "phone": "+14155550439",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Good Samaritan Family Resource Center",
+      "type": "community_agency",
+      "address": "1294 Potrero Ave, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.751792,
+      "lng": -122.406458,
+      "phone": "+14155550440",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Salvation Army Mission Corps Community Center",
+      "type": "pantry",
+      "address": "1156 Valencia St, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.75437,
+      "lng": -122.421157,
+      "phone": "+14155550441",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "St. Anthony de Padua Church",
+      "type": "pantry",
+      "address": "3215 Cesar Chavez St, San Francisco, CA 94110",
+      "neighborhood": "Mission",
+      "lat": 37.74781,
+      "lng": -122.41431,
+      "phone": "+14155550442",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "First Friendship Institutional Baptist Church",
+      "type": "pantry",
+      "address": "501 Steiner St, San Francisco, CA 94117",
+      "neighborhood": "Alamo Square",
+      "lat": 37.773939,
+      "lng": -122.432778,
+      "phone": "+14155550443",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Korean American Senior Service",
+      "type": "community_agency",
+      "address": "745 Buchanan St, San Francisco, CA",
+      "neighborhood": "Western Addition",
+      "lat": 37.776912,
+      "lng": -122.428256,
+      "phone": "+14155550444",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Institute on Aging",
+      "type": "community_agency",
+      "address": "3575 Geary Blvd, San Francisco, CA",
+      "neighborhood": "Inner Richmond",
+      "lat": 37.780898,
+      "lng": -122.457702,
+      "phone": "+14155550445",
+      "source": "https://www.freefood.org/c/ca-san_francisco"
+    },
+    {
+      "name": "Catholic Charities (Sunset)",
+      "type": "community_agency",
+      "address": "1555 39th Ave, San Francisco, CA 94122",
+      "neighborhood": "Outer Sunset",
+      "lat": 37.757745,
+      "lng": -122.498512,
+      "phone": "+14155550446",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Calvary United Methodist Church",
+      "type": "pantry",
+      "address": "1400 Judah St, San Francisco, CA",
+      "neighborhood": "Inner Sunset",
+      "lat": 37.76187,
+      "lng": -122.477378,
+      "phone": "+14155550447",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    },
+    {
+      "name": "Stonestown Family YMCA",
+      "type": "community_agency",
+      "address": "333 Eucalyptus Dr, San Francisco, CA 94132",
+      "neighborhood": "Stonestown",
+      "lat": 37.730775,
+      "lng": -122.47645,
+      "phone": "+14155550448",
+      "source": "https://www.needhelppayingbills.com/html/san_francisco_food_pantries.html"
+    }
+  ]
+}

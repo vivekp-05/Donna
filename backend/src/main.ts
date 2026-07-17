@@ -8,6 +8,7 @@ import type { PipelineDeps } from './core/pipeline.js';
 import { createStore } from './core/memory/store.js';
 import { createLlm } from './core/agents/llm.js';
 import { createVoice } from './core/voice/caller.js';
+import { nominatimGeocode } from './core/geo.js';
 import { sweepStaleCalls, type MachineDeps } from './core/voice/dispatchMachine.js';
 import { machineDeps } from './core/pipeline.js';
 import { CALL_REPORT_GRACE_MS } from './core/voice/vapi.js';
@@ -29,7 +30,7 @@ function resolve(): Promise<PipelineDeps> {
   }
   const s = singletons;
   if (!initP) initP = Promise.resolve(s.store.init());
-  return initP.then(async () => ({ ...s, config: await s.store.getConfig() }));
+  return initP.then(async () => ({ ...s, config: await s.store.getConfig(), geocode: nominatimGeocode }));
 }
 
 export const app = buildApp(resolve);

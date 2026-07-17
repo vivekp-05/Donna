@@ -507,3 +507,39 @@ strip, map bus writes) and gains two data drivers:
   panel; an end-of-call-report with call.type 'inboundPhoneCall' and
   artifact.transcript must pop the donation at awaiting_triage with verdicts
   + gate. DO NOT click Approve under vapi voice in any automated test.
+
+## K. v1.7 — Inventory hold + exact locations (user feedback)
+
+1. **"Add to inventory."** At the demo gate (and for any pending item), the
+   coordinator may HOLD an item at the food bank instead of dispatching it,
+   and decide later when to send it out. Button label exactly: "Add to
+   inventory".
+   - Backend: ItemStatus gains 'held'. POST /api/items/:id/hold (200 {item};
+     404 unknown, 409 unless pending). Dispatch loops treat only 'pending'
+     items; held items are skipped and do NOT block donation resolution.
+     Donor callback mentions held items ("We've taken N lbs of X into our
+     inventory at the food bank."). Directed calls and manual calls ACCEPT
+     held items (held → matched on accept; stays held on decline) — that is
+     the "send it out later" path.
+   - Frontend: gate item cards get a quiet secondary "Add to inventory"
+     button (any pending item); held cards show an IN INVENTORY micro-label
+     in --flow-store teal. Map: a held item draws pickup→food-bank leg and
+     then rests as a small teal dot pulsing AT the food bank. When a held
+     item is later placed via a directed call, its route originates at the
+     FOOD BANK (not the original pickup). NetworkPanel "Donna, call" item
+     picker includes held items, labeled "from inventory".
+2. **Exact caller locations.** When a parsed donation has pickupLocation
+   text but no coordinates, the backend geocodes it (Nominatim search,
+   San Francisco viewbox bias, 3s timeout, injectable via PipelineDeps so
+   vitest stays offline with a stub; failures leave coords absent). The map
+   then pins the exact spoken address.
+3. **Food-bank marker gets bolder:** larger diamond, thicker stroke, label
+   at higher weight/size, subtle standing glow-free emphasis ring (no §H
+   violations).
+4. **SF pantry dataset** (separate research deliverable): real SF pantry
+   names/addresses/coords staged in backend/seed/sf_pantries.json +
+   docs/SF_PANTRIES.md for LATER ingestion; phones are FICTIONAL 555
+   numbers only. Not wired into the store in this pass.
+Guardrails: mock/keyless demo still fully offline (canned path untouched —
+it has coords); tsc + vitest + vite build green; zero emojis; nothing
+committed or pushed.

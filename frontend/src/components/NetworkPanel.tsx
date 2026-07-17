@@ -75,11 +75,13 @@ export function NetworkPanel() {
     });
   }, [recipients, infoById]);
 
-  // Every pending item across all donations — the pool both modals pick from.
+  // Every offerable item across all donations — the pool both modals pick from.
+  // §K.1 — held items are included (the "send it out later" path); a directed or
+  // manual call ACCEPTS them, matching on accept and leaving them held on decline.
   const pendingItems = useMemo<Array<{ it: DonationItem; donation: Donation }>>(() => {
     const out: Array<{ it: DonationItem; donation: Donation }> = [];
     for (const d of donations) {
-      for (const it of d.items) if (it.status === 'pending') out.push({ it, donation: d });
+      for (const it of d.items) if (it.status === 'pending' || it.status === 'held') out.push({ it, donation: d });
     }
     return out;
   }, [donations]);
@@ -251,7 +253,10 @@ function PendingPicker({ pending, value, onChange }: {
       {pending.map(({ it, donation }) => (
         <label className={`pick${value === it.id ? ' on' : ''}`} key={it.id}>
           <input type="radio" name="pick-item" checked={value === it.id} onChange={() => onChange(it.id)} />
-          <span className="pick-name">{humanize(it.item)}</span>
+          <span className="pick-name">
+            {humanize(it.item)}
+            {it.status === 'held' && <span className="pick-inv"> — from inventory</span>}
+          </span>
           <span className="pick-meta">{Math.round(it.qtyLbs).toLocaleString()} lb · {donation.donorName || 'donor'}</span>
         </label>
       ))}
