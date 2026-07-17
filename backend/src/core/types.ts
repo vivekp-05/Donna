@@ -12,6 +12,26 @@ export type ItemStatus = 'pending' | 'matched' | 'unplaceable' | 'held';
  */
 export type DonationStatus =
   | 'received' | 'parsed' | 'scored' | 'awaiting_triage' | 'dispatching' | 'resolved';
+/**
+ * §L.2 — what a live call is doing right now, as opposed to what was said on it.
+ *
+ * Needed because "call still up" and "call ended, intake LLM is parsing it" are
+ * indistinguishable from outside: both have live lines and no donation yet. The
+ * dashboard rail renders the intelligence stage off `thinking`, so this must
+ * only ever be set around work that is genuinely running — never to pace a UI.
+ *
+ *   on_call  — a human is on the line; captions streaming.
+ *   thinking — hung up, transcript in hand, intake LLM parsing.
+ */
+export type CallPhase = 'on_call' | 'thinking';
+
+/** One live call as the dashboard sees it: what's being said, and what's happening. */
+export interface LiveCallRow {
+  callId: string;
+  lines: Array<{ speaker: 'agent' | 'recipient'; text: string }>;
+  phase?: CallPhase;
+}
+
 export type RecipientType = 'pantry' | 'community_agency';
 export type Infrastructure = 'walk_in_fridge' | 'fridge' | 'freezer' | 'dry_storage' | 'loading_dock';
 export type CallOutcome = 'accepted' | 'declined' | 'no_answer';

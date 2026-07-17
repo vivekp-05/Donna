@@ -1,5 +1,5 @@
 import type {
-  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord,
+  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord, CallPhase, LiveCallRow,
 } from '../types.js';
 import type { MemoryStore } from './store.js';
 import { makeSeedRecipients, makeSeedHistory } from '../../seed/recipients.js';
@@ -82,6 +82,7 @@ interface CallRow {
   directed: number;
 }
 interface LiveRow { call_id: string; speaker: string; text: string }
+interface PhaseRow { call_id: string; phase: string }
 
 function freshConfig(): AgentConfig {
   return JSON.parse(JSON.stringify(DEFAULT_AGENT_CONFIG)) as AgentConfig;
@@ -170,6 +171,9 @@ export class D1Store implements MemoryStore {
       this.db.prepare('DELETE FROM recipients'),
       this.db.prepare('DELETE FROM calls'),
       this.db.prepare('DELETE FROM live_lines'),
+      // Same reasoning as live_lines: a reset that left a 'thinking' phase behind
+      // would park the rail on the intelligence spinner forever.
+      this.db.prepare('DELETE FROM live_calls'),
       this.db.prepare('DELETE FROM config'),
     ]);
     await this.seed();
@@ -399,21 +403,49 @@ export class D1Store implements MemoryStore {
     return results.map((r) => ({ speaker: r.speaker as Speaker, text: r.text }));
   }
 
-  async listLiveCalls(): Promise<Array<{ callId: string; lines: LiveLine[] }>> {
-    const { results } = await this.db
-      .prepare('SELECT call_id, speaker, text FROM live_lines ORDER BY call_id ASC, seq ASC')
-      .all<LiveRow>();
+  /**
+   * §L.2 — a call is live if it has captions OR a phase. Neither table alone is
+   * authoritative: a call that has hung up and is being parsed still has its
+   * caption rows but stops gaining them, and a phase can be set before the
+   * first caption lands. So the two are unioned, not joined off live_lines.
+   */
+  async listLiveCalls(): Promise<LiveCallRow[]> {
+    const [lineRes, phaseRes] = await this.db.batch<LiveRow | PhaseRow>([
+      this.db.prepare('SELECT call_id, speaker, text FROM live_lines ORDER BY call_id ASC, seq ASC'),
+      this.db.prepare('SELECT call_id, phase FROM live_calls'),
+    ]);
 
     const byCall = new Map<string, LiveLine[]>();
-    for (const r of results) {
+    for (const r of (lineRes.results ?? []) as LiveRow[]) {
       const lines = byCall.get(r.call_id) ?? [];
       lines.push({ speaker: r.speaker as Speaker, text: r.text });
       byCall.set(r.call_id, lines);
     }
-    return [...byCall.entries()].map(([callId, lines]) => ({ callId, lines }));
+
+    const phases = new Map<string, CallPhase>();
+    for (const r of (phaseRes.results ?? []) as PhaseRow[]) {
+      phases.set(r.call_id, r.phase as CallPhase);
+      if (!byCall.has(r.call_id)) byCall.set(r.call_id, []);
+    }
+
+    return [...byCall.entries()].map(([callId, lines]) => ({
+      callId, lines, phase: phases.get(callId),
+    }));
   }
 
+  async setCallPhase(callId: string, phase: CallPhase): Promise<void> {
+    await this.db
+      .prepare(`INSERT INTO live_calls (call_id, phase, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT(call_id) DO UPDATE SET phase = excluded.phase, updated_at = excluded.updated_at`)
+      .bind(callId, phase, new Date().toISOString())
+      .run();
+  }
+
+  /** Clears BOTH the captions and the phase — they are one call's worth of state. */
   async clearLiveLines(callId: string): Promise<void> {
-    await this.db.prepare('DELETE FROM live_lines WHERE call_id = ?').bind(callId).run();
+    await this.db.batch([
+      this.db.prepare('DELETE FROM live_lines WHERE call_id = ?').bind(callId),
+      this.db.prepare('DELETE FROM live_calls WHERE call_id = ?').bind(callId),
+    ]);
   }
 }

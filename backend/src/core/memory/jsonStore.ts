@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import type {
-  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord,
+  Donation, Recipient, HistoryEvent, AgentConfig, CallRecord, CallPhase, LiveCallRow,
 } from '../types.js';
 import type { MemoryStore } from './store.js';
 import { makeSeedRecipients, makeSeedHistory } from '../../seed/recipients.js';
@@ -60,6 +60,8 @@ export class JsonStore implements MemoryStore {
    * on a single long-lived backend. Mirrors the old voice/liveTranscript module.
    */
   private live = new Map<string, LiveLine[]>();
+  /** §L.2 — call phase, parallel to `live`. Cleared everywhere `live` is. */
+  private livePhase = new Map<string, CallPhase>();
 
   private initialized = false;
   private writeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -96,6 +98,7 @@ export class JsonStore implements MemoryStore {
     // Backward compatible: a db.json written before calls existed has no `calls` key.
     this.calls = new Map((doc.calls ?? []).map((c) => [c.callId, c]));
     this.live.clear();
+    this.livePhase.clear();
   }
 
   /** Load seeds into memory and persist immediately (used by init + reset). */
@@ -109,6 +112,7 @@ export class JsonStore implements MemoryStore {
     // against a donation that no longer exists.
     this.calls = new Map();
     this.live.clear();
+    this.livePhase.clear();
     await this.flushNow();
   }
 
@@ -243,15 +247,28 @@ export class JsonStore implements MemoryStore {
     return (this.live.get(callId) ?? []).map(clone);
   }
 
-  async listLiveCalls(): Promise<Array<{ callId: string; lines: LiveLine[] }>> {
-    return [...this.live.entries()].map(([callId, lines]) => ({
-      callId,
-      lines: lines.map(clone),
-    }));
+  /** §L.2 — mirrors D1Store: a call is live if it has captions OR a phase. */
+  async listLiveCalls(): Promise<LiveCallRow[]> {
+    const ids = new Set([...this.live.keys(), ...this.livePhase.keys()]);
+    return [...ids].map((callId) => {
+      const row: LiveCallRow = {
+        callId,
+        lines: (this.live.get(callId) ?? []).map(clone),
+      };
+      const phase = this.livePhase.get(callId);
+      if (phase) row.phase = phase;
+      return row;
+    });
   }
 
+  async setCallPhase(callId: string, phase: CallPhase): Promise<void> {
+    this.livePhase.set(callId, phase);
+  }
+
+  /** Clears BOTH the captions and the phase — they are one call's worth of state. */
   async clearLiveLines(callId: string): Promise<void> {
     this.live.delete(callId);
+    this.livePhase.delete(callId);
   }
 
   // ---- reset ---------------------------------------------------------------

@@ -590,6 +590,11 @@ export function buildApp(resolve: Resolver): Hono {
           role === 'assistant' || role === 'bot' ? 'agent' : 'recipient',
           text,
         );
+        // §L.2 — a caption proves someone is on the line. Upsert rather than
+        // set-once: there is no "call started" event we can trust (an
+        // assistant-request never reaches here), so the first caption IS the
+        // start, and every later one is a no-op rewrite of the same value.
+        await deps.store.setCallPhase(callId, 'on_call');
       }
       return c.json({ ok: true });
     }
@@ -630,8 +635,18 @@ export function buildApp(resolve: Resolver): Hono {
         );
         const rawText = transcriptToRawText(transcript);
         if (!rawText) {
+          // Nothing to parse and no donation will ever exist for this call, so
+          // the captions and phase are orphans — drop them, or the rail would
+          // sit on a live call that already hung up.
+          await deps.store.clearLiveLines(normalized.callId);
           return c.json({ ok: true, ignored: true, reason: 'inbound call had no transcript' });
         }
+        // §L.2 — the call is over and the intake LLM is about to run. This is
+        // the ONLY thing the rail's intelligence stage renders from, and it is
+        // set immediately before the work and cleared immediately after, so the
+        // spinner is on screen exactly as long as the parse actually takes.
+        // parseDonation + geocode block this request, so the window is real.
+        await deps.store.setCallPhase(normalized.callId, 'thinking');
         const donation = await ingestDonation(
           {
             channel: 'voice',
@@ -645,6 +660,10 @@ export function buildApp(resolve: Resolver): Hono {
         await deps.store.clearLiveLines(normalized.callId);
         return c.json({ ok: true, inbound: true, donationId: donation.id, items: donation.items.length });
       } catch (e) {
+        // A parse that threw leaves a 'thinking' phase nothing will ever clear —
+        // the rail would spin forever on a call that failed. Best-effort clear;
+        // never let cleanup mask the original error.
+        try { await deps.store.clearLiveLines(normalized.callId); } catch { /* ignore */ }
         return c.json({ ok: true, inbound: true, error: errMsg(e) });
       }
     }
