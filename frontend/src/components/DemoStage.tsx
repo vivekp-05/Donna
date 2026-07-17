@@ -358,6 +358,31 @@ export function DemoStage(): React.JSX.Element {
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 
+  // §M.2 — HOLD the whole donation in one click (GateAside's "Add to inventory").
+  // The same persistence as holdOne, once per pending item, then a single local
+  // patch so the verdict cards flip together. With nothing left pending there is
+  // nothing to dispatch, so it resolves the donation exactly as the last per-item
+  // hold would — the flow carries on to the callback on its own.
+  async function holdAll() {
+    if (!enriched) return;
+    setErr(null);
+    const pend = enriched.donation.items.filter((i) => i.status === 'pending');
+    if (pend.length === 0) return;
+    try {
+      for (const it of pend) await api.holdItem(it.id);
+      setEnriched({
+        ...enriched,
+        donation: {
+          ...enriched.donation,
+          items: enriched.donation.items.map((i) =>
+            i.status === 'pending' ? { ...i, status: 'held' as ItemStatus } : i),
+        },
+      });
+      setHoldSeq((n) => n + 1);   // the shelf changed — refetch it
+      void approveDispatch();      // pending is now 0 → resolve and advance
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  }
+
   /**
    * §M.1 — the gate's other exit: decline the offer and ring the donor back.
    *
@@ -435,6 +460,19 @@ export function DemoStage(): React.JSX.Element {
     try { await api.approve(id); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 
+  // §M.2 — GateAside's "Add to inventory" on the LIVE path. No local snapshot to
+  // patch here (live is poll-driven), so just persist each pending hold; the next
+  // poll flips the verdict cards and refetches the shelf.
+  async function holdAllLive() {
+    if (!liveDon) return;
+    setErr(null);
+    const pend = liveDon.items.filter((i) => i.status === 'pending');
+    if (pend.length === 0) return;
+    try {
+      for (const it of pend) await api.holdItem(it.id);
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+  }
+
   if (liveActive) {
     return (
       <LiveStage
@@ -445,6 +483,7 @@ export function DemoStage(): React.JSX.Element {
         recipsById={recipsById}
         onApprove={approveLive}
         onReject={rejectAtGate}
+        onAddToInventory={holdAllLive}
         onReset={() => void resetStage()}
         err={err}
       />
@@ -470,10 +509,17 @@ export function DemoStage(): React.JSX.Element {
         <InboundPanel donation={donation} lines={inboundLines} />
       )}
 
-      {/* §M.2 — the gate's right-hand column (inventory + chat). Mounted on the
-          gate and nowhere else, so it leaves of its own accord the moment the
-          rail advances to 06 and the outbound panel takes that edge back. */}
-      {phase === 'gate' && <GateAside holdSeq={holdSeq} />}
+      {/* §M.2 — the gate's right-hand column (inventory + add-to-inventory).
+          Mounted on the gate and nowhere else, so it leaves of its own accord the
+          moment the rail advances to 06 and the outbound panel takes that edge
+          back. */}
+      {phase === 'gate' && (
+        <GateAside
+          holdSeq={holdSeq}
+          pendingCount={items.filter((i) => i.status === 'pending').length}
+          onAdd={holdAll}
+        />
+      )}
 
       {phase === 'calling' && call && <OutboundCallPanel call={call} />}
       {(phase === 'callback' || phase === 'done') && draft && donation && (
@@ -996,7 +1042,7 @@ function liveCallView(don: Donation, captions: Line[], now: number): CallView | 
  * on the line, captions only); it pops at awaiting_triage after hangup.
  */
 function LiveStage({
-  donation, captions, liveCall, now, recipsById, onApprove, onReject, onReset, err,
+  donation, captions, liveCall, now, recipsById, onApprove, onReject, onAddToInventory, onReset, err,
 }: {
   donation: Donation | null;
   captions: Line[];
@@ -1006,6 +1052,8 @@ function LiveStage({
   recipsById: Record<string, Recipient>;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  /** Shelve every pending item on the staged donation. */
+  onAddToInventory: () => void | Promise<void>;
   onReset: () => void;
   err: string | null;
 }) {
@@ -1042,7 +1090,12 @@ function LiveStage({
 
       <InboundPanel donation={inboundDon} lines={inboundLines} />
 
-      {phase === 'gate' && <GateAside />}
+      {phase === 'gate' && (
+        <GateAside
+          pendingCount={donation ? donation.items.filter((i) => i.status === 'pending').length : 0}
+          onAdd={onAddToInventory}
+        />
+      )}
 
       {call && <OutboundCallPanel call={call} />}
       {showDraft && donation && (
