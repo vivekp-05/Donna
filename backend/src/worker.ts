@@ -48,9 +48,14 @@ async function resolve(env: Env): Promise<PipelineDeps> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const app = buildApp(() => resolve(env));
-    return app.fetch(request);
+    // ctx MUST be passed through: it is what gives routes c.executionCtx, and
+    // therefore waitUntil. Without it the approve route's background dispatch is
+    // killed the moment the 202 is returned — observed live: the VAPI call went
+    // out, but the CallRecord and shortlist writes never landed, so the report
+    // came back to a database that had never heard of the call.
+    return app.fetch(request, env, ctx);
   },
 
   /**

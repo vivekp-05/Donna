@@ -277,10 +277,10 @@ export function buildApp(resolve: Resolver): Hono {
       existing.status = 'dispatching';
       await deps.store.saveDonation(existing);
 
-      // Fire-and-forget: the loop persists its own progress as each call lands,
-      // so the UI follows along via GET /api/donations/:id. Errors are recorded
-      // rather than thrown into a request nobody is holding open any more.
-      void dispatchDonation(id, deps).catch(async (e) => {
+      // Kick the machine off in the background: placing the first call means an
+      // LLM draft plus a VAPI round-trip, and nobody should hold a request open
+      // for it. The dashboard follows along via GET /api/donations/:id.
+      const started = dispatchDonation(id, deps).catch(async (e) => {
         console.error('[dispatch] failed:', errMsg(e));
         const d = await deps.store.getDonation(id);
         if (d && d.status === 'dispatching') {
@@ -289,6 +289,19 @@ export function buildApp(resolve: Resolver): Hono {
           await deps.store.saveDonation(d);
         }
       });
+
+      // On Workers, background work is CANCELLED once the response is returned
+      // unless it is handed to waitUntil. Observed live: a bare `void` here let
+      // the VAPI call escape while the CallRecord and shortlist writes that
+      // follow it were killed mid-flight — so the phone rang, and the report
+      // came back to a database with no record of the call, and the outcome was
+      // dropped. Node has no such lifecycle, hence the guard rather than a hard
+      // dependency on executionCtx.
+      try {
+        c.executionCtx.waitUntil(started);
+      } catch {
+        void started;   // Node: the process outlives the response anyway.
+      }
 
       return c.json({ ok: true, status: 'dispatching', donationId: id }, 202);
     } catch (e) {
