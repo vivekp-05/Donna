@@ -7,6 +7,7 @@ import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
 import { NetworkPanel } from './components/NetworkPanel';
 import { DemoStage, CLEAR_STAGE_EVENT } from './components/DemoStage';
+import { WinConfetti } from './components/WinConfetti';
 import { PitchStage } from './components/PitchStage';
 import { ManagerDrawer } from './components/ManagerDrawer';
 import { MessageSquare, RotateCcw } from './icons';
@@ -40,6 +41,9 @@ function Shell() {
       {/* full-bleed map hero under everything */}
       <MapView />
 
+      {/* One-shot win celebration: pops on load and again ~1.6s in, then gone. */}
+      <WinConfetti />
+
       <header className="hbar">
         <span className="wordmark">Donna<span className="wm-dot">.</span></span>
         <div className="seg">
@@ -47,7 +51,7 @@ function Shell() {
           <button className={`seg-btn${view === 'demo' ? ' on' : ''}`} onClick={() => setView('demo')}>Demo</button>
         </div>
         <span className="win-banner" title="AI Supply Chain Hackathon — July 15–17 2026, San Francisco">
-          <span className="wb-tag">First prize</span>
+          <span className="wb-tag">Winner</span>
           <span className="wb-text">AI Supply Chain Hackathon 2026 · Pebblebed × Capgemini</span>
         </span>
         <div className="hspacer" />
