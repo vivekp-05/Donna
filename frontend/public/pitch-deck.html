@@ -1,24 +1,30 @@
 <title>Donna — Pitch Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
+  /* Ivory skin — in lockstep with the console + landing page. Variable names
+     kept from the dark deck (--amber is now the coral accent) so the slide
+     markup below is untouched. */
   :root {
-    --ground:      #0B0F14;
-    --panel:       #121A22;
-    --panel-2:     #0E151C;
-    --rule:        #26313D;
-    --rule-soft:   #1B242E;
+    --ground:      #f7f3ea;
+    --panel:       #fffdf9;
+    --panel-2:     #fbf8f1;
+    --rule:        rgba(34,35,29,0.20);
+    --rule-soft:   rgba(34,35,29,0.10);
 
-    --ink:         #E8EDF2;
-    --ink-mid:     #A8B6C4;
-    --ink-mute:    #6B7A88;
+    --ink:         #22231d;
+    --ink-mid:     #66685c;
+    --ink-mute:    #a09f92;
 
-    --amber:       #FF9F1C;
-    --amber-dim:   #B36E12;
+    --amber:       #e4572e;
+    --amber-dim:   #b5431f;
 
-    --recovered:   #35D07F;
-    --spoiled:     #E5484D;
+    --recovered:   #3f8f6b;
+    --spoiled:     #c25a5a;
 
-    --display: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", system-ui, sans-serif;
-    --body:    "Avenir Next", "Avenir", "Helvetica Neue", system-ui, sans-serif;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --body:    "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono:    ui-monospace, "SF Mono", "Menlo", monospace;
   }
 
@@ -41,7 +47,7 @@
     flex-direction: column;
     justify-content: center;
     background:
-      radial-gradient(120% 100% at 88% 4%, rgba(255,159,28,0.045) 0%, transparent 55%),
+      radial-gradient(120% 100% at 88% 4%, rgba(228,87,46,0.05) 0%, transparent 55%),
       var(--ground);
   }
   .slide.on { display: flex; }
@@ -64,12 +70,12 @@
 
   h2 {
     font-family: var(--display);
-    font-size: 82px; line-height: 0.98;
-    font-weight: 600; letter-spacing: -0.018em;
+    font-size: 70px; line-height: 1.02;
+    font-weight: 600; letter-spacing: -0.015em;
     margin: 0; text-wrap: balance; max-width: 17ch;
   }
-  h2.sm { font-size: 66px; max-width: 20ch; }
-  h2.xs { font-size: 54px; max-width: 24ch; }
+  h2.sm { font-size: 56px; max-width: 20ch; }
+  h2.xs { font-size: 47px; max-width: 24ch; }
 
   .say {
     font-size: 23px; line-height: 1.5;
@@ -82,30 +88,30 @@
   .cite {
     position: absolute; left: 96px; right: 96px; bottom: 32px;
     font-family: var(--mono); font-size: 10px; line-height: 1.5;
-    color: #3D4956; letter-spacing: 0.04em;
+    color: #aba692; letter-spacing: 0.04em;
   }
 
   .rail { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--amber); transition: width 400ms cubic-bezier(.4,0,.2,1); }
   #counter {
     position: fixed; right: 22px; bottom: 15px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
-    color: #3D4956; font-variant-numeric: tabular-nums; z-index: 5;
+    color: #aba692; font-variant-numeric: tabular-nums; z-index: 5;
   }
   #hint {
     position: fixed; left: 22px; bottom: 15px;
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
-    color: #2A3440; z-index: 5; transition: opacity 500ms;
+    color: #c2bda9; z-index: 5; transition: opacity 500ms;
   }
 
   /* ---- hero numbers ---- */
   .hero {
     font-family: var(--display);
-    font-size: 250px; line-height: 0.82;
-    font-weight: 600; letter-spacing: -0.035em;
+    font-size: 225px; line-height: 0.86;
+    font-weight: 600; letter-spacing: -0.03em;
     color: var(--amber); font-variant-numeric: tabular-nums;
     margin: 0;
   }
-  .hero.md { font-size: 150px; }
+  .hero.md { font-size: 132px; }
   .hero .u { font-size: 0.45em; letter-spacing: -0.02em; }
   .hero-note {
     font-family: var(--mono); font-size: 11.5px;
@@ -118,14 +124,14 @@
 
   /* ---- title ---- */
   .wordmark {
-    font-family: var(--display); font-size: 186px; font-weight: 600;
-    letter-spacing: -0.035em; line-height: 0.82; margin: 0 0 36px;
+    font-family: var(--display); font-size: 160px; font-weight: 600;
+    letter-spacing: -0.03em; line-height: 0.86; margin: 0 0 36px;
   }
   .wordmark .dot { color: var(--amber); }
   .tagline {
-    font-family: var(--display); font-size: 50px; font-weight: 500;
-    line-height: 1.1; color: var(--ink); max-width: 20ch;
-    margin: 0; letter-spacing: -0.01em;
+    font-family: var(--display); font-size: 44px; font-weight: 500;
+    line-height: 1.14; color: var(--ink); max-width: 20ch;
+    margin: 0; letter-spacing: -0.008em;
   }
   .tagline .turn { color: var(--amber); }
 
@@ -144,7 +150,7 @@
   /* Donna is the name they should leave with. It gets to be loud. */
   .lane.donna .who {
     font-family: var(--display);
-    font-size: 42px; font-weight: 600;
+    font-size: 38px; font-weight: 600;
     letter-spacing: -0.01em; text-transform: none;
     color: var(--amber); line-height: 1;
   }
@@ -155,12 +161,12 @@
   }
   @keyframes nameIn {
     0%   { opacity: 0; transform: translateY(10px) scale(0.9); text-shadow: none; }
-    55%  { opacity: 1; transform: translateY(0) scale(1.04); text-shadow: 0 0 34px rgba(255,159,28,0.65); }
-    100% { opacity: 1; transform: scale(1); text-shadow: 0 0 16px rgba(255,159,28,0.22); }
+    55%  { opacity: 1; transform: translateY(0) scale(1.04); text-shadow: 0 0 34px rgba(228,87,46,0.5); }
+    100% { opacity: 1; transform: scale(1); text-shadow: 0 0 16px rgba(228,87,46,0.18); }
   }
   .lane .dur {
-    font-family: var(--display); font-size: 78px; font-weight: 600;
-    line-height: 1; margin: 10px 0 22px; letter-spacing: -0.02em;
+    font-family: var(--display); font-size: 66px; font-weight: 600;
+    line-height: 1; margin: 10px 0 22px; letter-spacing: -0.018em;
     color: var(--ink-mute);
   }
   .lane.donna .dur { color: var(--amber); }
@@ -261,11 +267,11 @@
   .row .v .good { color: var(--recovered); }
   .row .v .work { color: var(--amber); }
   .row.flash { animation: flash 900ms ease-out; }
-  @keyframes flash { 0% { background: rgba(255,159,28,0.20); } 100% { background: transparent; } }
+  @keyframes flash { 0% { background: rgba(228,87,46,0.14); } 100% { background: transparent; } }
   .row.flash-good { animation: flashGood 900ms ease-out; }
-  @keyframes flashGood { 0% { background: rgba(53,208,127,0.20); } 100% { background: transparent; } }
+  @keyframes flashGood { 0% { background: rgba(63,143,107,0.16); } 100% { background: transparent; } }
   .row.flash-bad { animation: flashBad 900ms ease-out; }
-  @keyframes flashBad { 0% { background: rgba(229,72,77,0.18); } 100% { background: transparent; } }
+  @keyframes flashBad { 0% { background: rgba(194,90,90,0.14); } 100% { background: transparent; } }
 
   @media (prefers-reduced-motion: reduce) {
     .r, .slide.on .r { animation: none !important; opacity: 1 !important; transform: none !important; }
