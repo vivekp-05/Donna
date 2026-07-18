@@ -274,11 +274,9 @@
     <a class="brand" href="#top">Donna<i>.</i></a>
     <div class="links" id="navLinks">
       <a href="#listen">Listen in</a>
-      <a href="#fast">Why I'm fast</a>
-      <a href="#memory">What I remember</a>
-      <a href="#fair">Fair by design</a>
       <a href="#who">Who it's for</a>
       <a href="#hood">Under the hood</a>
+      <a href="https://projectdonna-pitch.vercel.app" target="_blank" rel="noopener">Pitch ↗</a>
     </div>
     <a class="cta-mini" href="#customize">Reach out</a>
   </div>
@@ -340,64 +338,6 @@
   </div>
 </section>
 
-<!-- ============================ WHY I'M FAST ============================ -->
-<section class="sec" id="fast">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <p class="eyebrow">Why I'm fast</p>
-      <h2>Ranked before the first ring.</h2>
-      <p>The difference isn't dialing faster. It's knowing who to call <strong>before</strong> the phone leaves the cradle.</p>
-    </div>
-    <div class="lanes reveal">
-      <div class="lane">
-        <div class="topline"></div>
-        <span class="who">A person</span>
-        <div class="dur">Hours</div>
-        <ul>
-          <li>Dial. Wait for a callback.</li>
-          <li>Hear no.</li>
-          <li>Reopen the spreadsheet. Dial again.</li>
-        </ul>
-      </div>
-      <div class="lane donna">
-        <div class="topline"></div>
-        <span class="who">Donna</span>
-        <div class="dur">Minutes</div>
-        <ul>
-          <li>Scores every pantry <strong>before</strong> dialing — clock, freezer, capacity, need.</li>
-          <li>Hears no, calls the next <em>instantly</em>.</li>
-          <li>Runs every donation at once.</li>
-        </ul>
-      </div>
-    </div>
-    <p class="punch reveal"><strong>Not "who might take this." Who is the single best call to make right now.</strong></p>
-  </div>
-</section>
-
-<!-- ========================== WHAT I REMEMBER ========================== -->
-<section class="sec" id="memory">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <p class="eyebrow">The part a human can't do</p>
-      <h2>Every call makes the next one better.</h2>
-      <p>I keep a memory of every pantry and every donor — and I update it <strong>while I'm still on the phone</strong>.</p>
-    </div>
-    <div class="vigs reveal">
-      <div class="vig">
-        <p class="said"><span class="spk">Donna:</span> "Since you have refrigeration —"<br><span class="spk">Pantry:</span> "We don't have a refrigerator."</p>
-        <span class="tag">Corrected on the call</span>
-        <p class="did">The record was wrong. It isn't anymore — and I'll never offer them frozen goods again.</p>
-      </div>
-      <div class="vig neg">
-        <p class="said"><span class="spk">Donor:</span> "48 hours left on this beef."<br><span class="spk">Pantry:</span> "It arrived spoiled."</p>
-        <span class="tag">Scored against the donor</span>
-        <p class="did">Their next "48 hours" gets the skepticism it earned.</p>
-      </div>
-    </div>
-    <p class="punch reveal"><strong>A person would have to hang up, remember, find the row, and edit it — for every call, all day. That's why it never happens.</strong></p>
-  </div>
-</section>
-
 <!-- =========================== HUMAN GATE BAND ========================== -->
 <div class="gate">
   <div class="wrap in reveal">
@@ -405,28 +345,6 @@
     <p><strong>Nothing dispatches without a person able to say no.</strong> Every donation waits at the gate until you approve it — I do the legwork, you keep the wheel.</p>
   </div>
 </div>
-
-<!-- ============================= FAIRNESS ============================= -->
-<section class="sec" id="fair">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <p class="eyebrow">Fair by design</p>
-      <h2>AI at the edges. <br>Fairness math in the middle.</h2>
-    </div>
-    <div class="fair-card reveal">
-      <h3>The allocation decision is <em>never</em> made by an LLM.</h3>
-      <p class="fp">AI parses the calls and does the talking — but <strong>who gets the food</strong> is decided by a deterministic, auditable scoring engine. Same inputs, same answer, every time. Five signals, weighed in the open:</p>
-      <div class="signals">
-        <span class="signal" style="transition-delay:0ms">Feasibility<i style="--gap:8%"></i></span>
-        <span class="signal" style="transition-delay:90ms">Cold chain<i style="--gap:14%"></i></span>
-        <span class="signal" style="transition-delay:180ms">Capacity<i style="--gap:26%"></i></span>
-        <span class="signal" style="transition-delay:270ms">Equity<i style="--gap:20%"></i></span>
-        <span class="signal" style="transition-delay:360ms">Preferences<i style="--gap:38%"></i></span>
-      </div>
-      <p class="fair-fine">Equity is a live signal, not a report — pantries that keep getting passed over score higher next round, so the same three big pantries don't absorb every donation.</p>
-    </div>
-  </div>
-</section>
 
 <!-- ============================ WHO IT'S FOR ============================ -->
 <section class="sec" id="who">
@@ -522,14 +440,13 @@
     <div class="col">
       <h5>Site</h5>
       <a href="#listen">Listen in</a>
-      <a href="#fast">Why I'm fast</a>
-      <a href="#memory">What I remember</a>
-      <a href="#fair">Fair by design</a>
+      <a href="#who">Who it's for</a>
       <a href="#hood">Under the hood</a>
     </div>
     <div class="col">
       <h5>Project</h5>
       <a href="https://projectdonna.vercel.app" target="_blank" rel="noopener">Live console ↗</a>
+      <a href="https://projectdonna-pitch.vercel.app" target="_blank" rel="noopener">Pitch deck ↗</a>
       <a href="#customize">Customize it</a>
       <a href="mailto:in.vivekpatel@gmail.com">in.vivekpatel@gmail.com</a>
       <a href="mailto:vivekpatel@psu.edu">vivekpatel@psu.edu</a>
@@ -549,7 +466,7 @@
   (function () {
     const nav = $('nav');
     window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 8), { passive: true });
-    const links = Array.from($('navLinks').querySelectorAll('a'));
+    const links = Array.from($('navLinks').querySelectorAll('a[href^="#"]'));
     const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
     function spy() {
       let live = 0;
