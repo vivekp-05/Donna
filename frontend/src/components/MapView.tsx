@@ -267,7 +267,7 @@ export function MapView() {
       <MapContainer center={pickup || SF_CENTER} zoom={12} zoomControl={false} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
         <ZoomControl position="bottomright" />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
           subdomains="abcd"
           maxZoom={20}
@@ -288,7 +288,8 @@ export function MapView() {
               center={[r.lat, r.lng]}
               radius={selected ? 12 : 8}
               pathOptions={{
-                color: selected ? '#ffffff' : color,
+                // Selection ring: ink on the light basemap (was white on dark).
+                color: selected ? '#22231d' : color,
                 weight: selected ? 2.5 : 1.5,
                 fillColor: color,
                 fillOpacity,

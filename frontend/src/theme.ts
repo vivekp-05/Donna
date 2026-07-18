@@ -4,12 +4,14 @@
 import type { ItemCategory, ScoreBreakdown, TermKey } from './types';
 
 // Five stacked-bar term colors. Cold = icy cyan, equity = green, etc.
+// Darkened one step from the dark-skin pastels so they hold contrast on the
+// ivory surfaces (the pastels were tuned for near-black cards).
 export const TERM_COLORS: Record<TermKey, string> = {
-  feasibility: '#ffb454', // amber — time/route
-  coldchain: '#4cc9f0',   // ice cyan — refrigeration
-  capacity: '#c77dff',    // violet — volume fit
-  equity: '#57cc99',      // green — fairness
-  prefs: '#ff8fab',       // pink — preferences/history
+  feasibility: '#d9891f', // amber — time/route
+  coldchain: '#1f8fc0',   // ice cyan — refrigeration
+  capacity: '#8a4fd0',    // violet — volume fit
+  equity: '#2f8f68',      // green — fairness
+  prefs: '#d6567f',       // pink — preferences/history
 };
 
 export const TERM_LABELS: Record<TermKey, string> = {
@@ -29,7 +31,7 @@ const RAMP: Array<[number, [number, number, number]]> = [
   [1.0, [253, 231, 37]],
 ];
 
-const GREY = '#54607a';
+const GREY = '#9a998c'; // hard-fail pin on the light basemap
 
 function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
 
@@ -137,9 +139,9 @@ export const FOOD_BANK = { name: 'SF-Marin Food Bank', lat: 37.7541, lng: -122.3
  * alongside the other palette constants (TERM_COLORS above). These MUST stay in
  * lockstep with styles.css :root (--flow-direct / --flow-store / --route-dim).
  */
-export const FLOW_DIRECT = '#ff6a3d'; // = --hot / --flow-direct (straight from supplier)
-export const FLOW_STORE = '#4fb3a9';  // = --flow-store (via warehouse / stored inventory)
-export const ROUTE_DIM = 'rgba(231,233,236,0.22)'; // = --route-dim (dashed preview)
+export const FLOW_DIRECT = '#e4572e'; // = --hot / --flow-direct (straight from supplier)
+export const FLOW_STORE = '#2f9d92';  // = --flow-store (via warehouse / stored inventory)
+export const ROUTE_DIM = 'rgba(34,35,29,0.28)'; // = --route-dim (dashed preview)
 
 /**
  * Routing verdict (§I.1). Whether an item is shown routing straight from the
