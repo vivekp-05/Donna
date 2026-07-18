@@ -86,6 +86,21 @@ function fmtElapsed(ms: number): string {
   return `${m}:${String(s % 60).padStart(2, '0')}`;
 }
 
+/**
+ * §Try Donna — loose client-side E.164 normalization for the gate's phone
+ * field. Bare 10-digit input is assumed US (the demo network is SF); anything
+ * already carrying a country code passes through. Null = not dialable yet —
+ * the gate stays shut. Mirrors the server's `^\+[0-9]{8,15}$` check.
+ */
+function normalizePhone(raw: string): string | null {
+  const trimmed = raw.trim();
+  const digits = trimmed.replace(/[^0-9]/g, '');
+  if (digits.length < 8 || digits.length > 15) return null;
+  if (trimmed.startsWith('+')) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`;
+}
+
 export function DemoStage(): React.JSX.Element {
   const [phase, setPhase] = useState<Phase>('idle');
   const [enriched, setEnriched] = useState<EnrichedDonation | null>(null);
@@ -99,6 +114,10 @@ export function DemoStage(): React.JSX.Element {
   const [startedCanned, setStartedCanned] = useState(false);
   // §M.2 — bumped on each hold so the gate's inventory card refetches the shelf.
   const [holdSeq, setHoldSeq] = useState(0);
+  // §Try Donna — the visitor's number for demo call routing. Raw as typed; the
+  // normalized E.164 form rides each gate action and is never persisted past
+  // the run (the backend scrubs it on resolve).
+  const [demoPhone, setDemoPhone] = useState('');
   // How many item cards may reveal their PLACED / NO TAKERS outcome during the
   // replay. Cards derive status from REPLAY PROGRESS (§I.4 step 5) — an item stays
   // pending (verdict only) until its own call replay completes — NOT from the
@@ -320,11 +339,15 @@ export function DemoStage(): React.JSX.Element {
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 
+  // The normalized demo number every gate action sends — undefined until the
+  // visitor has typed something dialable.
+  const phoneE164 = normalizePhone(demoPhone) ?? undefined;
+
   async function approveDispatch() {
     if (!enriched) return;
     setErr(null);
     try {
-      const disp = await api.dispatch(enriched.donation.id);
+      const disp = await api.dispatch(enriched.donation.id, phoneE164);
       setDispatched(disp);
       // §J.3 guard: sim returns a fully-resolved donation → run the replay. Live
       // voice returns an IN-FLIGHT snapshot (status 'dispatching' or pending items
@@ -406,7 +429,7 @@ export function DemoStage(): React.JSX.Element {
     setErr(null);
     setFollowId(id);
     try {
-      await api.reject(id);
+      await api.reject(id, phoneE164);
     } catch (e) {
       setFollowId(null);   // never crossed the gate — stay on it rather than stranding at 06
       setErr(e instanceof Error ? e.message : String(e));
@@ -482,7 +505,7 @@ export function DemoStage(): React.JSX.Element {
   async function approveLive(id: string) {
     setFollowId(id);      // follow this donation from the gate through to resolved
     setErr(null);
-    try { await api.approve(id); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    try { await api.approve(id, phoneE164); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 
   // §M.2 — GateAside's "Add to inventory" on the LIVE path. No local snapshot to
@@ -511,6 +534,9 @@ export function DemoStage(): React.JSX.Element {
         onAddToInventory={holdAllLive}
         onReset={() => void resetStage()}
         err={err}
+        vapi={vapi === true}
+        demoPhone={demoPhone}
+        onDemoPhone={setDemoPhone}
       />
     );
   }
@@ -573,6 +599,10 @@ export function DemoStage(): React.JSX.Element {
 
         {phase === 'done' && dispatched && <SummaryChips donation={dispatched} />}
 
+        {/* §Try Donna — under live voice the gate needs the visitor's number
+            before anything can be approved: the outbound call rings THEM. */}
+        {phase === 'gate' && vapi && <PhonePrompt value={demoPhone} onChange={setDemoPhone} />}
+
         <div className="stage-controls">
           {phase === 'idle' && (
             <>
@@ -592,19 +622,26 @@ export function DemoStage(): React.JSX.Element {
               // and the flow carries on to the callback on its own.
               return <span className="muted">All items held in inventory.</span>;
             }
+            // Under live voice both exits place a REAL call (offers out, or the
+            // donor decline) — neither may fire until there is a number to ring.
+            const needPhone = vapi && phoneE164 == null;
             return (
               <>
-                <span className="muted">Held for review — nothing is called until you approve.</span>
+                <span className="muted">
+                  {needPhone
+                    ? 'Enter your number above — Donna calls you as the pantry.'
+                    : 'Held for review — nothing is called until you approve.'}
+                </span>
                 {/* §M.1 — reject sits BESIDE approve, not behind a menu: the gate has two
                     real answers and hiding one of them is how a coordinator ends up
                     approving something they meant to decline. Quiet styling keeps the
                     single accent on the forward path. */}
                 {donation && (
-                  <button className="btn-quiet" onClick={() => void rejectAtGate(donation.id)}>
+                  <button className="btn-quiet" disabled={needPhone} onClick={() => void rejectAtGate(donation.id)}>
                     Reject donation
                   </button>
                 )}
-                <button className="btn-primary" onClick={() => void approveDispatch()}>
+                <button className="btn-primary" disabled={needPhone} onClick={() => void approveDispatch()}>
                   Approve &amp; dispatch{anyHeld ? ` (${pending})` : ''}
                 </button>
               </>
@@ -769,6 +806,40 @@ function liveResolveItem(it: DonationItem): { ok: boolean; recipientName?: strin
   }
   if (it.status === 'unplaceable') return { ok: false };
   return null;
+}
+
+/* --------------------------------------------------------- phone prompt */
+
+/**
+ * §Try Donna — the gate's demo-phone field, shown only under live voice. The
+ * demo never rings a real pantry (the seeded network's numbers are fake):
+ * whoever is watching plays the pantry, so Donna's outbound call must reach
+ * THEM. The number rides the gate action, routes this one run's calls, and the
+ * backend scrubs it from the record the moment the donation resolves.
+ */
+function PhonePrompt({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ok = normalizePhone(value) != null;
+  return (
+    <div className="phone-ask">
+      <p className="pa-why">
+        This is a demo, so Donna won&rsquo;t call an actual pantry —
+        <strong> you</strong> get the call, and answer as the pantry.
+      </p>
+      <label className="pa-label" htmlFor="demo-phone">
+        Enter your phone number to receive the outbound call
+      </label>
+      <input
+        id="demo-phone"
+        className={`pa-input${value && !ok ? ' bad' : ''}`}
+        type="tel"
+        autoComplete="off"
+        placeholder="+1 (415) 555-0134"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <p className="pa-note">We don&rsquo;t save your number — it routes this run&rsquo;s calls, then it&rsquo;s deleted.</p>
+    </div>
+  );
 }
 
 /* --------------------------------------------------------- reset button */
@@ -1159,6 +1230,7 @@ function liveCallView(don: Donation, captions: Line[], now: number): CallView | 
  */
 function LiveStage({
   donation, captions, liveCall, now, recipsById, onApprove, onReject, onAddToInventory, onReset, err,
+  vapi, demoPhone, onDemoPhone,
 }: {
   donation: Donation | null;
   captions: Line[];
@@ -1172,6 +1244,10 @@ function LiveStage({
   onAddToInventory: () => void | Promise<void>;
   onReset: () => void;
   err: string | null;
+  /** §Try Donna — live voice: the gate collects the visitor's number. */
+  vapi: boolean;
+  demoPhone: string;
+  onDemoPhone: (v: string) => void;
 }) {
   const phase: 'inbound' | 'gate' | 'calling' | 'done' =
     !donation ? 'inbound'
@@ -1240,17 +1316,27 @@ function LiveStage({
 
         {phase === 'done' && donation && <SummaryChips donation={donation} />}
 
+        {/* §Try Donna — same rule as the canned gate: no number, no outbound. */}
+        {phase === 'gate' && vapi && <PhonePrompt value={demoPhone} onChange={onDemoPhone} />}
+
         <div className="stage-controls">
           {phase === 'inbound' && (
             <span className="muted">On the line — the caller is describing a donation.</span>
           )}
-          {phase === 'gate' && donation && (
-            <>
-              <span className="muted">Real inbound call — held for review.</span>
-              <button className="btn-quiet" onClick={() => onReject(donation.id)}>Reject donation</button>
-              <button className="btn-primary" onClick={() => onApprove(donation.id)}>Approve &amp; dispatch</button>
-            </>
-          )}
+          {phase === 'gate' && donation && (() => {
+            const needPhone = vapi && normalizePhone(demoPhone) == null;
+            return (
+              <>
+                <span className="muted">
+                  {needPhone
+                    ? 'Enter your number above — Donna calls you as the pantry.'
+                    : 'Real inbound call — held for review.'}
+                </span>
+                <button className="btn-quiet" disabled={needPhone} onClick={() => onReject(donation.id)}>Reject donation</button>
+                <button className="btn-primary" disabled={needPhone} onClick={() => onApprove(donation.id)}>Approve &amp; dispatch</button>
+              </>
+            );
+          })()}
           {phase === 'calling' && (
             <span className="muted">
               {rejected

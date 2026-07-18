@@ -49,8 +49,11 @@ export const api = {
   getDonation: (id: string) =>
     request<any>(`/donations/${id}`).then(asEnriched),
 
-  dispatch: (id: string) =>
-    request<any>(`/donations/${id}/dispatch`, { method: 'POST', body: '{}' })
+  // `demoPhone` (all three gate actions): the visitor's E.164 number, so demo
+  // outbound calls ring THEM — see DemoStage's phone prompt. Never persisted
+  // past the run: the backend scrubs it from the donation on resolve.
+  dispatch: (id: string, demoPhone?: string) =>
+    request<any>(`/donations/${id}/dispatch`, { method: 'POST', body: JSON.stringify(demoPhone ? { demoPhone } : {}) })
       .then((raw) => (raw && raw.donation ? (raw.donation as Donation) : (raw as Donation))),
 
   /**
@@ -59,10 +62,10 @@ export const api = {
    * so the caller follows along via getDonation rather than holding a request
    * open for minutes of real phone calls.
    */
-  approve: (id: string) =>
+  approve: (id: string, demoPhone?: string) =>
     request<{ ok: boolean; status: string; donationId: string }>(
       `/donations/${id}/approve`,
-      { method: 'POST', body: '{}' },
+      { method: 'POST', body: JSON.stringify(demoPhone ? { demoPhone } : {}) },
     ),
 
   /**
@@ -71,8 +74,8 @@ export const api = {
    * `dispatching` while the donor is on the phone, so the caller follows it to
    * `resolved` via the same poll.
    */
-  reject: (id: string) =>
-    request<RejectResponse>(`/donations/${id}/reject`, { method: 'POST', body: '{}' }),
+  reject: (id: string, demoPhone?: string) =>
+    request<RejectResponse>(`/donations/${id}/reject`, { method: 'POST', body: JSON.stringify(demoPhone ? { demoPhone } : {}) }),
 
   // §M.2 — what is on the food bank's shelf right now: every held item across
   // all donations, newest first, plus the total weight.

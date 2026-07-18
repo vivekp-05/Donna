@@ -74,6 +74,18 @@ export interface Donation {
    * also matches the behaviour verified on real calls.
    */
   itemCursor?: number;
+  /**
+   * Visitor-supplied demo routing number (§Try Donna): while set, EVERY outbound
+   * call this donation places — recipient offers and the donor rejection call —
+   * dials this handset instead, taking precedence over LIVE_CALL_PHONE_OVERRIDE.
+   *
+   * It lives on the donation because dispatch is event-driven: the follow-up
+   * calls are placed from webhook invocations that only have the store. The UI
+   * promises the number is never kept, so it is SCRUBBED the moment the
+   * donation resolves (finishDonationIfResolved / the reject paths) — it exists
+   * exactly as long as the run it routes.
+   */
+  demoPhone?: string;
 }
 export interface DonationItem {
   id: string; donationId: string;

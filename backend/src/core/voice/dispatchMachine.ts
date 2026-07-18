@@ -39,7 +39,7 @@ export interface MachineDeps {
   llm: LlmClient;
   config: AgentConfig;
   /** Places the call and returns VAPI's call id. Does NOT wait for the outcome. */
-  placeCall(offer: OfferDraft, recipient: Recipient, item: DonationItem): Promise<string>;
+  placeCall(offer: OfferDraft, recipient: Recipient, item: DonationItem, dialOverride?: string): Promise<string>;
   /**
    * Present only for providers with no webhook (the simulator). When set, the
    * machine feeds its decision straight back through onCallReport, so simulated
@@ -183,7 +183,7 @@ async function placeNext(
 
   let callId: string;
   try {
-    callId = await deps.placeCall(offer, recipient, item);
+    callId = await deps.placeCall(offer, recipient, item, donation.demoPhone);
   } catch (e) {
     // The call never got off the ground (bad number, VAPI rejected it). Treat
     // it as a no-answer attempt and keep the machine moving rather than

@@ -22,7 +22,12 @@ import { VapiVoice } from './vapi.js';
  * category memory. The live VAPI provider ignores it.
  */
 export interface VoiceProvider {
-  startCall(offer: OfferDraft, recipient: Recipient, item: DonationItem): Promise<string>;
+  /**
+   * `dialOverride` is the visitor's demo number (donation.demoPhone), threaded
+   * per-call because this interface never sees the donation. When set it wins
+   * over LIVE_CALL_PHONE_OVERRIDE; the simulator ignores it (nothing dials).
+   */
+  startCall(offer: OfferDraft, recipient: Recipient, item: DonationItem, dialOverride?: string): Promise<string>;
   /**
    * §M.1 — call the DONOR back on the number they rang in from, to decline what
    * they offered. Every other outbound call in the system goes to a Recipient

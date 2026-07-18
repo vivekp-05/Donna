@@ -185,17 +185,19 @@ function buildAssistant(offer: OfferDraft, recipient: Recipient, item: DonationI
 /**
  * The number this call is actually dialed to.
  *
- * LIVE_CALL_PHONE_OVERRIDE redirects every outbound call to one handset. This is
+ * Precedence: the visitor's demo number (donation.demoPhone, threaded in as
+ * `dialOverride` — §Try Donna, "you play the pantry") beats
+ * LIVE_CALL_PHONE_OVERRIDE, which beats the recipient's own phone. This is
  * the ONLY place a dial target is chosen, so nothing upstream — ranking, offer
- * drafting, the recipient's own `phone` field — can route around it. The returned
- * CallAttempt still credits the recipient the engine actually picked.
+ * drafting, the recipient's own `phone` field — can route around it. The
+ * returned CallAttempt still credits the recipient the engine actually picked.
  */
-function dialTarget(recipient: Recipient): string {
-  const override = ENV.liveCallPhoneOverride;
+function dialTarget(recipient: Recipient, dialOverride?: string): string {
+  const override = dialOverride || ENV.liveCallPhoneOverride;
   if (!override) return recipient.phone;
   console.warn(
-    `[vapi] LIVE_CALL_PHONE_OVERRIDE active — dialing ${override} ` +
-      `instead of ${recipient.name} (${recipient.phone}).`,
+    `[vapi] ${dialOverride ? 'visitor demoPhone' : 'LIVE_CALL_PHONE_OVERRIDE'} active — ` +
+      `dialing ${override} instead of ${recipient.name} (${recipient.phone}).`,
   );
   return override;
 }
@@ -210,11 +212,13 @@ function dialTarget(recipient: Recipient): string {
  * dialling a stranger.
  */
 function dialDonor(donation: Donation): string {
-  const override = ENV.liveCallPhoneOverride;
+  // Same precedence as dialTarget: the visitor's demo number rides on the
+  // donation itself here, so no extra threading is needed.
+  const override = donation.demoPhone || ENV.liveCallPhoneOverride;
   if (!override) return donation.sourceContact;
   console.warn(
-    `[vapi] LIVE_CALL_PHONE_OVERRIDE active — dialing ${override} ` +
-      `instead of the donor (${donation.sourceContact}).`,
+    `[vapi] ${donation.demoPhone ? 'visitor demoPhone' : 'LIVE_CALL_PHONE_OVERRIDE'} active — ` +
+      `dialing ${override} instead of the donor (${donation.sourceContact}).`,
   );
   return override;
 }
@@ -271,6 +275,7 @@ export class VapiVoice implements VoiceProvider {
     offer: OfferDraft,
     recipient: Recipient,
     item: DonationItem,
+    dialOverride?: string,
   ): Promise<string> {
     if (!ENV.vapiApiKey || !ENV.vapiPhoneNumberId) {
       throw new Error('VAPI_API_KEY and VAPI_PHONE_NUMBER_ID are required for VOICE_PROVIDER=vapi');
@@ -294,7 +299,7 @@ export class VapiVoice implements VoiceProvider {
       },
       body: JSON.stringify({
         phoneNumberId: ENV.vapiPhoneNumberId,
-        customer: { number: dialTarget(recipient) },
+        customer: { number: dialTarget(recipient, dialOverride) },
         assistant: buildAssistant(offer, recipient, item),
       }),
     });

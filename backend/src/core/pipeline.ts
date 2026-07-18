@@ -97,6 +97,9 @@ export async function finishDonationIfResolved(
   if (donation.items.some((it) => it.status === 'pending')) return false;
   donation.donorMessage = await composeDonorMessage(donation, deps.llm);
   donation.status = 'resolved';
+  // The visitor's demo number has done its job — the UI promises it is never
+  // kept, so it must not survive the run it routed.
+  donation.demoPhone = undefined;
   await deps.store.saveDonation(donation);
   return true;
 }
@@ -185,6 +188,7 @@ export async function rejectDonation(
   // the rejection message without pretending a phone rang.
   if (!deps.voice.startDonorCall) {
     donation.status = 'resolved';
+    donation.demoPhone = undefined;   // resolved — scrub, same promise as finishDonationIfResolved
     await deps.store.saveDonation(donation);
     return { ok: true, donation, calling: false };
   }
@@ -203,6 +207,7 @@ export async function rejectDonation(
     console.error('[reject] donor call failed:', e instanceof Error ? e.message : String(e));
     donation.status = 'resolved';
     donation.rejectCallId = undefined;
+    donation.demoPhone = undefined;   // resolved — scrub, same promise as finishDonationIfResolved
     await deps.store.saveDonation(donation);
     return { ok: true, donation, calling: false };
   }
@@ -228,6 +233,7 @@ export async function onRejectCallEnded(
   if (donation.status !== 'dispatching') return true;   // already resolved — duplicate report
   donation.status = 'resolved';
   donation.rejectCallId = undefined;
+  donation.demoPhone = undefined;   // resolved — scrub, same promise as finishDonationIfResolved
   await deps.store.saveDonation(donation);
   return true;
 }
@@ -294,7 +300,7 @@ export function machineDeps(deps: PipelineDeps): MachineDeps {
     store: deps.store,
     llm: deps.llm,
     config: deps.config,
-    placeCall: (offer, recipient, item) => voice.startCall(offer, recipient, item),
+    placeCall: (offer, recipient, item, dialOverride) => voice.startCall(offer, recipient, item, dialOverride),
     ...(voice.synthesizeReport
       ? { synthesizeReport: voice.synthesizeReport.bind(voice) }
       : {}),

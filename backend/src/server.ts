@@ -242,12 +242,31 @@ export function buildApp(resolve: Resolver): Hono {
   // This endpoint runs the full call loop unconditionally and is NOT an enforced
   // backend trust boundary — a direct API call bypasses the UI gate by design so
   // the offline canned-demo e2e and demo script can dispatch with an empty body.
+  /**
+   * §Try Donna — the gate's optional `demoPhone` body field: the VISITOR's
+   * number, so demo outbound calls ring them instead of a hard-wired handset.
+   * Client normalizes to E.164; a malformed value fails loudly here rather
+   * than silently at VAPI. Returns the number, null when absent, 'invalid'.
+   */
+  const parseDemoPhone = (body: unknown): string | null | 'invalid' => {
+    const phone = (body as { demoPhone?: unknown } | null)?.demoPhone;
+    if (phone == null || phone === '') return null;
+    if (typeof phone !== 'string' || !/^\+[0-9]{8,15}$/.test(phone)) return 'invalid';
+    return phone;
+  };
+
   app.post('/api/donations/:id/dispatch', async (c) => {
     const id = c.req.param('id');
     try {
       const deps = await resolve();
       const existing = await deps.store.getDonation(id);
       if (!existing) return c.json({ error: 'donation not found' }, 404);
+      const demoPhone = parseDemoPhone(await c.req.json().catch(() => ({})));
+      if (demoPhone === 'invalid') return c.json({ error: 'demoPhone must be E.164, e.g. +14155550134' }, 400);
+      if (demoPhone) {
+        existing.demoPhone = demoPhone;
+        await deps.store.saveDonation(existing);
+      }
       const resolved = await dispatchDonation(id, deps);
       return c.json(resolved);
     } catch (e) {
@@ -273,6 +292,10 @@ export function buildApp(resolve: Resolver): Hono {
       if (existing.status === 'resolved') {
         return c.json({ error: 'already resolved' }, 409);
       }
+
+      const demoPhone = parseDemoPhone(await c.req.json().catch(() => ({})));
+      if (demoPhone === 'invalid') return c.json({ error: 'demoPhone must be E.164, e.g. +14155550134' }, 400);
+      if (demoPhone) existing.demoPhone = demoPhone;
 
       existing.status = 'dispatching';
       await deps.store.saveDonation(existing);
@@ -321,6 +344,17 @@ export function buildApp(resolve: Resolver): Hono {
     const id = c.req.param('id');
     try {
       const deps = await resolve();
+      // The donor decline call is outbound too — under a demo it must ring the
+      // visitor, so the same demoPhone rides the donation before dialling.
+      const demoPhone = parseDemoPhone(await c.req.json().catch(() => ({})));
+      if (demoPhone === 'invalid') return c.json({ error: 'demoPhone must be E.164, e.g. +14155550134' }, 400);
+      if (demoPhone) {
+        const existing = await deps.store.getDonation(id);
+        if (existing) {
+          existing.demoPhone = demoPhone;
+          await deps.store.saveDonation(existing);
+        }
+      }
       const result = await rejectDonation(id, deps);
       if (!result.ok) {
         return c.json(
