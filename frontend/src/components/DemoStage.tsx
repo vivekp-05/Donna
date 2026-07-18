@@ -46,6 +46,13 @@ import { GateAside } from './GateAside';
 type Phase =
   | 'idle' | 'inbound' | 'transcribing' | 'intelligence'
   | 'parsed' | 'gate' | 'calling' | 'callback' | 'done';
+
+/**
+ * "Clear screen" broadcast from the header popover. The header owns the button
+ * but must not own this module (see the self-containment note above): it
+ * broadcasts, we listen — the same arms-length contract as the demo bus.
+ */
+export const CLEAR_STAGE_EVENT = 'donna:clear-stage';
 type Line = { speaker: string; text: string };
 const FB: [number, number] = [FOOD_BANK.lat, FOOD_BANK.lng];
 
@@ -406,13 +413,31 @@ export function DemoStage(): React.JSX.Element {
     }
   }
 
-  async function resetStage() {
+  // "Clear screen": everything resetStage does EXCEPT the api.reset call — the
+  // choreography, the panels and the map narrative go back to idle, the store
+  // keeps every donation and call. A donation genuinely awaiting triage will
+  // re-surface through the live driver on the next poll, deliberately: hiding
+  // real pending work would strand a donation invisibly.
+  function clearStage() {
     runIdRef.current++;
     skipRef.current = false;
     resetDemoBus();
     setEnriched(null); setDispatched(null); setStartedCanned(false); setFollowId(null);
     setInboundN(0); setItemsN(0); setCall(null); setDraft(null); setReplayItemsDone(0);
     setPhase('idle'); setErr(null);
+  }
+
+  // The header popover's "Clear screen" reaches us by broadcast, not props.
+  useEffect(() => {
+    const h = () => clearStage();
+    window.addEventListener(CLEAR_STAGE_EVENT, h);
+    return () => window.removeEventListener(CLEAR_STAGE_EVENT, h);
+    // clearStage touches only refs and stable setters — safe to bind once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function resetStage() {
+    clearStage();
     try { await api.reset(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }
 

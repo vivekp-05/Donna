@@ -6,7 +6,7 @@ import { IntakeModal } from './components/IntakeModal';
 import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
 import { NetworkPanel } from './components/NetworkPanel';
-import { DemoStage } from './components/DemoStage';
+import { DemoStage, CLEAR_STAGE_EVENT } from './components/DemoStage';
 import { PitchStage } from './components/PitchStage';
 import { ManagerDrawer } from './components/ManagerDrawer';
 import { MessageSquare, RotateCcw } from './icons';
@@ -22,13 +22,15 @@ export default function App(): React.JSX.Element {
 }
 
 function Shell() {
-  const { mode, reset, busy, toast, detailOpen, appliedPatchCount } = useDonna();
+  const { mode, reset, busy, toast, detailOpen, appliedPatchCount, closeDetail, pushToast } = useDonna();
   // Boots into the Pitch deck: the deck opens the room, then we cross to the
   // Dispatch console / Demo tab from the ribbon.
   const [view, setView] = useState<View>('pitch');
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [mgrOpen, setMgrOpen] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
+  // The ↺ popover: 'menu' offers Clear screen (client-only) beside Reset demo;
+  // only the destructive path goes through the extra 'confirm' step.
+  const [resetMenu, setResetMenu] = useState<'closed' | 'menu' | 'confirm'>('closed');
 
   const live = !!mode && (mode.llm !== 'mock' || mode.db !== 'json' || mode.voice !== 'sim');
   const modeTip = mode ? `LLM ${mode.llm} · DB ${mode.db} · Voice ${mode.voice}` : 'connecting…';
@@ -62,26 +64,48 @@ function Shell() {
         <button className="icon-btn mgr" onClick={() => setMgrOpen((o) => !o)} title="Manager console" aria-label="Manager console">
           <MessageSquare />{appliedPatchCount > 0 && <span className="badge">{appliedPatchCount}</span>}
         </button>
-        {/* Reset arms a confirm popover rather than firing: /api/demo/reset wipes
-            every donation and call and reseeds the store, which is a lot to lose
-            to a stray click. Clicking the icon again cancels. */}
+        {/* ↺ opens a two-option popover. Clear screen is client-only (stage back
+            to idle, detail closed, store untouched) and fires straight away;
+            Reset demo keeps the extra confirm because /api/demo/reset wipes
+            every donation and call and reseeds the store. Clicking the icon
+            again cancels either state. */}
         <button
-          className={`icon-btn${confirmReset ? ' armed' : ''}`}
-          onClick={() => setConfirmReset((o) => !o)}
+          className={`icon-btn${resetMenu !== 'closed' ? ' armed' : ''}`}
+          onClick={() => setResetMenu((s) => (s === 'closed' ? 'menu' : 'closed'))}
           disabled={busy.init}
-          title="Reset demo"
-          aria-label="Reset demo"
+          title="Clear or reset"
+          aria-label="Clear or reset"
         >
           <RotateCcw />
         </button>
-        {confirmReset && (
+        {resetMenu === 'menu' && (
+          <div className="confirm-pop" role="menu" aria-label="Clear or reset">
+            <button
+              className="cp-opt"
+              onClick={() => {
+                setResetMenu('closed');
+                closeDetail();
+                window.dispatchEvent(new Event(CLEAR_STAGE_EVENT));
+                pushToast('Screen cleared — data kept');
+              }}
+            >
+              <span className="cp-opt-name">Clear screen</span>
+              <span className="cp-opt-desc">Put the stage back to idle. Keeps every donation and call.</span>
+            </button>
+            <button className="cp-opt danger" onClick={() => setResetMenu('confirm')}>
+              <span className="cp-opt-name">Reset demo</span>
+              <span className="cp-opt-desc">Wipe the store and restore the seed data.</span>
+            </button>
+          </div>
+        )}
+        {resetMenu === 'confirm' && (
           <div className="confirm-pop" role="alertdialog" aria-label="Confirm demo reset">
             <span className="cp-text">
               Reset the demo? Every donation and call is wiped and the seed data restored.
             </span>
             <div className="cp-actions">
-              <button className="btn-quiet" onClick={() => setConfirmReset(false)}>Cancel</button>
-              <button className="btn-primary" onClick={() => { setConfirmReset(false); void reset(); }}>
+              <button className="btn-quiet" onClick={() => setResetMenu('closed')}>Cancel</button>
+              <button className="btn-primary" onClick={() => { setResetMenu('closed'); void reset(); }}>
                 Reset demo
               </button>
             </div>

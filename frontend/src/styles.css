@@ -201,6 +201,21 @@ body {
 .cp-text { display: block; font: 400 12.5px/1.5 var(--sans); color: var(--text-dim); }
 .cp-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
 .cp-actions .btn-quiet, .cp-actions .btn-primary { padding: 7px 12px; font-size: 12px; }
+
+/* The popover's menu face: one row per option, quiet until hovered. The
+   destructive row gets the muted red on its NAME only — the row itself stays
+   calm so the popover doesn't read as an alert before anything is chosen. */
+.cp-opt {
+  appearance: none; display: block; width: 100%; text-align: left; cursor: pointer;
+  background: transparent; border: 1px solid var(--border); border-radius: var(--radius-s);
+  padding: 9px 11px;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.cp-opt + .cp-opt { margin-top: 8px; }
+.cp-opt:hover { background: var(--surface-1); border-color: var(--border-2); }
+.cp-opt-name { display: block; font: 600 12.5px/1.3 var(--sans); color: var(--text); }
+.cp-opt.danger .cp-opt-name { color: var(--bad-mute); }
+.cp-opt-desc { display: block; margin-top: 2px; font: 400 11.5px/1.4 var(--sans); color: var(--text-faint); }
 .icon-btn .badge {
   position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 3px;
   background: var(--hot); color: var(--hot-ink); border-radius: 20px; font: 700 9px var(--sans);
