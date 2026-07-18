@@ -1,0 +1,730 @@
+<title>Donna — Food rescue, dispatched</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ---- "The Call" — full site build-out on the v10 foundation.
+     Ivory / deep green / coral; Fraunces voice + Inter UI. The centerpiece
+     stays the call player; around it: why-fast, memory, fairness, audiences,
+     under-the-hood, customize. */
+  :root {
+    --ivory:  #f7f3ea;
+    --card:   #fffdf9;
+    --ink:    #22231d;
+    --ink-dim:#66685c;
+    --ink-faint:#a09f92;
+    --line:   rgba(34,35,29,0.1);
+    --line-2: rgba(34,35,29,0.16);
+    --green:  #24523b;
+    --green-soft: rgba(36,82,59,0.1);
+    --coral:  #e4572e;
+    --slate:  #5a6472;
+    --good:   #3f8f6b;
+    --bad:    #c25a5a;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --spring: cubic-bezier(0.2, 0.9, 0.28, 1.2);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--ivory); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; line-height: 1.55; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 26px; }
+  .eyebrow { font: 600 11px/1 var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--coral); margin: 0; }
+
+  .spring { opacity: 0; transform: translateY(26px) scale(0.975); animation: springIn 850ms var(--spring) forwards; animation-delay: var(--d, 0ms); }
+  @keyframes springIn { to { opacity: 1; transform: none; } }
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 850ms var(--ease-out), transform 850ms var(--ease-out); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------------- nav ---------------- */
+  .nav { position: sticky; top: 0; z-index: 20; background: rgba(247,243,234,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid transparent; transition: border-color 300ms; }
+  .nav.scrolled { border-bottom-color: var(--line); }
+  .nav .in { display: flex; align-items: center; gap: 22px; padding: 15px 0; }
+  .nav .brand { font-family: var(--serif); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); margin-right: auto; }
+  .nav .brand i { font-style: normal; color: var(--coral); }
+  .nav .links { display: flex; gap: 20px; }
+  .nav .links a { font: 500 13px/1 var(--sans); color: var(--ink-dim); text-decoration: none; padding: 6px 2px; position: relative; transition: color 300ms; }
+  .nav .links a::after { content: ""; position: absolute; left: 0; right: 100%; bottom: 0; height: 2px; background: var(--coral); border-radius: 2px; transition: right 350ms var(--ease-out); }
+  .nav .links a:hover, .nav .links a.live { color: var(--ink); }
+  .nav .links a.live::after { right: 0; }
+  .nav .cta-mini { font: 600 12.5px/1 var(--sans); color: #fff; background: var(--green); text-decoration: none; border-radius: 9px; padding: 10px 16px; transition: transform 200ms var(--spring), background 250ms; }
+  .nav .cta-mini:hover { transform: translateY(-1px); background: #2d6449; }
+  @media (max-width: 820px) { .nav .links { display: none; } }
+
+  /* ---------------- hero ---------------- */
+  .hero { padding: 72px 0 30px; text-align: center; }
+  .hey { font-family: var(--serif); font-weight: 600; font-size: clamp(42px, 8vw, 92px); line-height: 1.02; letter-spacing: -0.02em; margin: 18px 0 0; }
+  .hey .hand { display: inline-block; transform-origin: 72% 78%; animation: wave 2.6s var(--ease-out) 1.1s infinite; font-size: 0.8em; }
+  @keyframes wave { 0%,62%,100% { transform: rotate(0); } 8% { transform: rotate(16deg); } 16% { transform: rotate(-9deg); } 24% { transform: rotate(16deg); } 32% { transform: rotate(-5deg); } 40% { transform: rotate(11deg); } 48% { transform: rotate(0); } }
+  .hey em { font-style: italic; color: var(--green); }
+  .tagline { font-family: var(--serif); font-style: italic; font-size: clamp(18px, 2.6vw, 26px); line-height: 1.4; color: var(--ink-dim); margin: 22px auto 0; max-width: 34ch; }
+  .tagline .turn { color: var(--coral); }
+  .sub { font-size: clamp(15px, 1.9vw, 17.5px); color: var(--ink-dim); max-width: 56ch; margin: 20px auto 0; }
+  .sub strong { color: var(--ink); font-weight: 600; }
+  .serves { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 30px 0 0; }
+  .chip { font: 600 12px/1 var(--sans); color: var(--ink-dim); background: var(--card); border: 1px solid var(--line-2); border-radius: 999px; padding: 9px 15px; transition: transform 300ms var(--spring); }
+  .chip:hover { transform: translateY(-3px); }
+  .cue { display: inline-flex; align-items: center; gap: 9px; margin: 42px 0 0; font: 600 10.5px/1 var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); }
+  .cue .arrow { display: inline-block; animation: bob 1.8s var(--ease-out) infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+  /* ---------------- shared section head ---------------- */
+  .sec { padding: 92px 0 0; }
+  .sec-head { text-align: center; max-width: 58ch; margin: 0 auto 40px; }
+  .sec-head h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 3.8vw, 40px); line-height: 1.06; letter-spacing: -0.015em; margin: 14px 0 0; text-wrap: balance; }
+  .sec-head p { font-size: 15.5px; color: var(--ink-dim); margin: 14px auto 0; max-width: 50ch; }
+  .sec-head p strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------------- call player ---------------- */
+  .player { border: 1px solid var(--line-2); border-radius: 22px; background: var(--card); overflow: hidden;
+    box-shadow: 0 2px 4px rgba(34,35,29,0.04), 0 30px 70px -40px rgba(34,35,29,0.4); }
+  .p-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #fbf8f1, var(--card)); flex-wrap: wrap; }
+  .p-head .idbox { display: flex; align-items: center; gap: 12px; font: 500 11px/1 var(--mono); letter-spacing: 0.1em; color: var(--ink-dim); }
+  .p-live { display: inline-flex; align-items: center; gap: 7px; font: 700 9.5px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--coral); }
+  .p-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .p-clock { font: 700 13px/1 var(--mono); letter-spacing: 0.06em; color: var(--coral); font-variant-numeric: tabular-nums; }
+  .tracker { display: flex; gap: 0; padding: 16px 14px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .step { position: relative; flex: 1 0 92px; text-align: center; cursor: pointer; padding: 4px 4px 2px; }
+  .step .sd { width: 11px; height: 11px; border-radius: 50%; margin: 0 auto; background: var(--ivory); border: 2px solid var(--line-2); transition: all 400ms var(--ease-out); position: relative; z-index: 1; }
+  .step .sl { font: 600 9.5px/1.3 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-top: 8px; transition: color 400ms; }
+  .step::before { content: ""; position: absolute; top: 9.5px; left: -50%; width: 100%; height: 2px; background: var(--line); }
+  .step:first-child::before { display: none; }
+  .step.done .sd { background: var(--good); border-color: var(--good); }
+  .step.done .sl { color: var(--ink-dim); }
+  .step.act .sd { background: var(--coral); border-color: var(--coral); box-shadow: 0 0 0 5px rgba(228,87,46,0.18); transform: scale(1.2); }
+  .step.act .sl { color: var(--ink); font-weight: 700; }
+  .step:hover .sd { transform: scale(1.25); border-color: var(--coral); }
+  .stage-info { max-height: 0; overflow: hidden; transition: max-height 450ms var(--ease-out); border-bottom: 0 solid var(--line); background: var(--green-soft); }
+  .stage-info.open { max-height: 150px; border-bottom-width: 1px; }
+  .stage-info .in { padding: 16px 22px; }
+  .stage-info .k { font: 700 9.5px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--green); }
+  .stage-info h4 { font-family: var(--serif); font-weight: 600; font-size: 17px; margin: 6px 0 0; }
+  .stage-info p { font-size: 13.5px; color: var(--ink-dim); margin: 5px 0 0; max-width: 72ch; }
+  .stage-info p strong { color: var(--ink); }
+  .p-body { display: grid; grid-template-columns: 1.15fr 1fr; }
+  .tx { padding: 22px 24px; border-right: 1px solid var(--line); min-height: 330px; max-height: 330px; overflow-y: auto; scroll-behavior: smooth; }
+  .tx-line { margin: 0 0 16px; opacity: 0; transform: translateY(8px); transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out); }
+  .tx-line.in { opacity: 1; transform: none; }
+  .tx-line .spk { font: 700 9.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; display: block; margin-bottom: 4px; color: var(--ink-faint); }
+  .tx-line.donna .spk { color: var(--green); }
+  .tx-line.pantry .spk { color: var(--slate); }
+  .tx-line .txt { font-family: var(--serif); font-size: 16.5px; line-height: 1.45; color: var(--ink-dim); }
+  .tx-line.donna .txt { color: var(--ink); }
+  .tx-line.sys { text-align: center; }
+  .tx-line.sys .txt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .tx-line.sys .txt .g { color: var(--good); }
+  .rec { padding: 18px 20px; background: #fbf8f1; }
+  .rec .rk { font: 700 9.5px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  .rrow { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .rrow:last-child { border-bottom: none; }
+  .rrow .f { font: 600 9px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  .rrow .v { font: 500 12.5px/1.5 var(--mono); color: var(--ink); }
+  .rrow .v .muted { color: var(--ink-faint); }
+  .rrow .v .struck { text-decoration: line-through; color: var(--ink-faint); }
+  .rrow .v .bad { color: var(--bad); } .rrow .v .good { color: var(--good); } .rrow .v .work { color: var(--coral); }
+  .rrow.flash { animation: fl 900ms ease-out; }
+  @keyframes fl { 0% { background: rgba(228,87,46,0.14); } 100% { background: transparent; } }
+  .rrow.flash-good { animation: flg 900ms ease-out; }
+  @keyframes flg { 0% { background: rgba(63,143,107,0.16); } 100% { background: transparent; } }
+  .rrow.flash-bad { animation: flb 900ms ease-out; }
+  @keyframes flb { 0% { background: rgba(194,90,90,0.14); } 100% { background: transparent; } }
+  .p-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .p-hint { font: 600 10px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); }
+  .replay { font: 600 12px/1 var(--sans); color: var(--green); background: none; border: 1px solid var(--line-2); border-radius: 9px; padding: 9px 15px; cursor: pointer; transition: all 250ms var(--ease-out); }
+  .replay:hover { border-color: var(--green); background: var(--green-soft); }
+
+  /* ---------------- why fast: two lanes ---------------- */
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px, 5vw, 60px); }
+  .lane { position: relative; padding-top: 24px; }
+  .lane .topline { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--line-2); transform: scaleX(0); transform-origin: left; transition: transform 900ms var(--ease-out); }
+  .lane.donna .topline { background: var(--green); }
+  .reveal.in .lane .topline { transform: scaleX(1); }
+  .reveal.in .lane.donna .topline { transition-delay: 350ms; }
+  .lane .who { font: 600 11px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); display: block; height: 34px; }
+  .lane.donna .who { font-family: var(--serif); font-size: 26px; font-weight: 600; text-transform: none; letter-spacing: -0.01em; color: var(--green); line-height: 1; }
+  .lane .dur { font-family: var(--serif); font-weight: 600; font-size: clamp(38px, 5.6vw, 58px); line-height: 1; margin: 8px 0 18px; letter-spacing: -0.02em; color: var(--ink-faint); }
+  .lane.donna .dur { color: var(--coral); }
+  .lane ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .lane li { position: relative; padding-left: 18px; font-size: 14.5px; color: var(--ink-dim); max-width: 34ch; }
+  .lane li::before { content: ""; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--ink-faint); }
+  .lane.donna li::before { background: var(--coral); }
+  .lane li strong { color: var(--ink); font-weight: 600; }
+  .lane li em { font-style: normal; color: var(--coral); }
+  .punch { font-family: var(--serif); font-size: clamp(17px, 2.4vw, 21px); line-height: 1.45; color: var(--ink); margin: 44px auto 0; max-width: 52ch; text-align: center; }
+  .punch strong { font-weight: 600; }
+
+  /* ---------------- memory vignettes ---------------- */
+  .vigs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .vig { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px 26px 22px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(34,35,29,0.04), 0 18px 40px -30px rgba(34,35,29,0.35); transition: transform 500ms var(--ease-out); }
+  .vig:hover { transform: translateY(-3px); }
+  .vig::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--green); transform: scaleY(0); transform-origin: top; transition: transform 800ms var(--ease-out) 200ms; }
+  .vig.neg::before { background: var(--bad); }
+  .reveal.in .vig::before { transform: scaleY(1); }
+  .vig .said { font: 400 13px/1.75 var(--mono); color: var(--ink); margin: 0 0 14px; }
+  .vig .said .spk { color: var(--ink-faint); }
+  .vig .tag { font: 700 9.5px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--good); display: block; margin-bottom: 7px; }
+  .vig.neg .tag { color: var(--bad); }
+  .vig .did { font-size: 14px; color: var(--ink-dim); max-width: 34ch; }
+
+  /* ---------------- human gate band ---------------- */
+  .gate { margin-top: 92px; background: var(--ink); color: #f2efe4; }
+  .gate .in { padding: clamp(40px, 6vw, 64px) 0; text-align: center; }
+  .gate h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(24px, 3.6vw, 38px); letter-spacing: -0.01em; margin: 0; }
+  .gate h3 em { font-style: italic; color: var(--coral); }
+  .gate p { font-size: 15px; color: rgba(242,239,228,0.7); margin: 14px auto 0; max-width: 48ch; }
+  .gate p strong { color: #fff; font-weight: 600; }
+
+  /* ---------------- fairness ---------------- */
+  .fair-card { background: var(--card); border: 1px solid var(--line-2); border-radius: 22px; padding: clamp(30px, 5vw, 52px);
+    box-shadow: 0 2px 4px rgba(34,35,29,0.04), 0 26px 60px -40px rgba(34,35,29,0.4); text-align: center; }
+  .fair-card h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(22px, 3.2vw, 32px); margin: 0; letter-spacing: -0.01em; }
+  .fair-card h3 em { font-style: italic; color: var(--green); }
+  .fair-card .fp { font-size: 15px; color: var(--ink-dim); max-width: 56ch; margin: 16px auto 0; }
+  .fair-card .fp strong { color: var(--ink); font-weight: 600; }
+  .signals { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 30px 0 0; }
+  .signal { position: relative; font: 600 12.5px/1 var(--sans); color: var(--ink); background: #fbf8f1; border: 1px solid var(--line-2); border-radius: 11px; padding: 13px 18px 17px; min-width: 118px;
+    opacity: 0; transform: translateY(14px) scale(0.95); transition: opacity 600ms var(--ease-out), transform 600ms var(--spring); }
+  .signal i { position: absolute; left: 12px; right: 12px; bottom: 8px; height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; display: block; }
+  .signal i::after { content: ""; position: absolute; inset: 0; right: 100%; background: var(--green); border-radius: 3px; transition: right 900ms var(--ease-out) 500ms; }
+  .reveal.in .signal { opacity: 1; transform: none; }
+  .reveal.in .signal i::after { right: var(--gap, 20%); }
+  .fair-fine { font: 400 12px/1.7 var(--mono); color: var(--ink-faint); margin: 26px auto 0; max-width: 62ch; }
+
+  /* ---------------- who it's for ---------------- */
+  .aud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .aud-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px;
+    transition: transform 400ms var(--spring), border-color 400ms, box-shadow 400ms; }
+  .aud-card:hover { transform: translateY(-5px); border-color: var(--line-2); box-shadow: 0 20px 40px -28px rgba(34,35,29,0.4); }
+  .aud-card .em { font-size: 26px; display: block; }
+  .aud-card h4 { font-family: var(--serif); font-weight: 600; font-size: 17px; margin: 12px 0 0; }
+  .aud-card p { font-size: 13px; color: var(--ink-dim); margin: 8px 0 0; }
+  .aud-card p strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------------- under the hood ---------------- */
+  .hood { background: #fbf8f1; border-block: 1px solid var(--line); margin-top: 92px; }
+  .hood .in { padding: 64px 0; }
+  .hood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(26px, 5vw, 56px); margin-top: 36px; }
+  .hood h3 { font: 700 11px/1 var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); margin: 0 0 16px; }
+  .hood ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .hood li { display: grid; grid-template-columns: 148px 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; align-items: baseline; }
+  .hood li:last-child { border-bottom: none; }
+  .hood li .t { font: 600 11px/1.5 var(--mono); letter-spacing: 0.06em; color: var(--ink); }
+  .hood li .d { color: var(--ink-dim); }
+  .hood li .d strong { color: var(--ink); font-weight: 600; }
+  .hood-note { font: 400 12.5px/1.7 var(--mono); color: var(--ink-faint); margin: 30px 0 0; }
+  .hood-note b { color: var(--green); font-weight: 700; }
+
+  /* ---------------- reach out ---------------- */
+  .cta-sec { padding: 96px 0 84px; }
+  .cta { border-radius: 24px; padding: clamp(38px, 6vw, 66px); background: var(--green); color: #f2efe4; position: relative; overflow: hidden; }
+  .cta::before { content: ""; position: absolute; right: -70px; top: -70px; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, rgba(228,87,46,0.35), transparent 70%); }
+  .cta .eyebrow { color: #ffb493; }
+  .cta h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(26px, 4vw, 42px); line-height: 1.08; letter-spacing: -0.015em; margin: 16px 0 0; max-width: 21ch; }
+  .cta > p { font-size: clamp(15px, 2vw, 17.5px); color: rgba(242,239,228,0.82); max-width: 55ch; margin: 20px 0 0; }
+  .cta > p strong { color: #fff; font-weight: 600; }
+  .paths { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 36px 0 0; position: relative; }
+  .path { border: 1px solid rgba(242,239,228,0.22); border-radius: 15px; background: rgba(242,239,228,0.05); padding: 22px; transition: transform 400ms var(--spring), background 400ms; }
+  .path:hover { transform: translateY(-4px); background: rgba(242,239,228,0.1); }
+  .path .k { font: 700 10px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: #ffb493; margin: 0; }
+  .path h4 { font-family: var(--serif); font-weight: 600; font-size: 18px; margin: 10px 0 0; }
+  .path p { font-size: 13.5px; color: rgba(242,239,228,0.78); margin: 7px 0 0; }
+  .cta-actions { display: flex; gap: 13px; flex-wrap: wrap; margin: 36px 0 0; position: relative; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font: 600 14.5px/1 var(--sans); text-decoration: none; border-radius: 12px; padding: 15px 24px; transition: transform 200ms var(--spring); }
+  .btn.solid { background: var(--coral); color: #fff; }
+  .btn.solid:hover { transform: translateY(-2px); }
+  .btn.line { color: #f2efe4; border: 1.5px solid rgba(242,239,228,0.35); }
+  .btn.line:hover { border-color: #fff; }
+
+  /* ---------------- footer ---------------- */
+  footer { border-top: 1px solid var(--line); background: #fbf8f1; }
+  footer .in { padding: 52px 0 46px; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: clamp(24px, 5vw, 60px); }
+  footer .fm { font-family: var(--serif); font-weight: 600; font-size: 26px; color: var(--ink); margin: 0; }
+  footer .fm i { font-style: normal; color: var(--coral); }
+  footer .ft { font-family: var(--serif); font-style: italic; font-size: 14.5px; color: var(--ink-dim); margin: 10px 0 0; max-width: 30ch; }
+  footer h5 { font: 700 10px/1 var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px; }
+  footer .col a { display: block; font-size: 13.5px; color: var(--ink-dim); text-decoration: none; padding: 4px 0; transition: color 300ms; }
+  footer .col a:hover { color: var(--green); }
+  footer .base { border-top: 1px solid var(--line); padding: 18px 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font: 500 11px/1.6 var(--mono); letter-spacing: 0.08em; color: var(--ink-faint); }
+
+  @media (max-width: 860px) { .aud { grid-template-columns: 1fr 1fr; } footer .in { grid-template-columns: 1fr; gap: 30px; } }
+  @media (max-width: 760px) {
+    .p-body { grid-template-columns: 1fr; }
+    .tx { border-right: none; border-bottom: 1px solid var(--line); min-height: 240px; max-height: 240px; }
+    .paths, .lanes, .vigs, .hood-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) { .aud { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    .spring, .reveal { opacity: 1 !important; transform: none !important; animation: none; transition: none; }
+    .hey .hand, .cue .arrow, .p-live i { animation: none !important; }
+    .tx-line { opacity: 1; transform: none; transition: none; }
+    .step .sd, .stage-info, .rrow, .lane .topline, .vig::before, .signal, .signal i::after { transition: none; animation: none !important; }
+    .lane .topline, .vig::before { transform: none !important; }
+    .signal { opacity: 1 !important; }
+    .signal i::after { right: var(--gap, 20%) !important; }
+  }
+</style>
+
+<!-- ================================ NAV ================================ -->
+<nav class="nav" id="nav">
+  <div class="wrap in">
+    <a class="brand" href="#top">Donna<i>.</i></a>
+    <div class="links" id="navLinks">
+      <a href="#listen">Listen in</a>
+      <a href="#fast">Why I'm fast</a>
+      <a href="#memory">What I remember</a>
+      <a href="#fair">Fair by design</a>
+      <a href="#who">Who it's for</a>
+      <a href="#hood">Under the hood</a>
+    </div>
+    <a class="cta-mini" href="#customize">Reach out</a>
+  </div>
+</nav>
+
+<!-- ================================ HERO ================================ -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow spring" style="--d:40ms">Project Donna · food-rescue dispatcher</p>
+    <h1 class="hey spring" style="--d:140ms">Hey <span class="hand">👋</span> — I'm <em>Donna.</em></h1>
+    <p class="tagline spring" style="--d:300ms">“Nobody wastes food on purpose. <span class="turn">They just run out of time.</span>”</p>
+    <p class="sub spring" style="--d:440ms">I answer when a donor calls with surplus on the clock. I work out what it is and how long it has, rank every pantry that could take it, and start making calls — <strong>placed in minutes, not an afternoon of dialing</strong>.</p>
+    <div class="serves spring" style="--d:560ms">
+      <span class="chip">Food banks &amp; pantries</span>
+      <span class="chip">Grocers &amp; restaurants</span>
+      <span class="chip">Farms &amp; distributors</span>
+      <span class="chip">Rescue dispatchers</span>
+    </div>
+    <div class="cue spring" style="--d:680ms"><span class="arrow">↓</span> Don't take my word for it — listen in</div>
+  </div>
+</header>
+
+<!-- ============================ CALL PLAYER ============================ -->
+<section class="sec" id="listen" style="padding-top:56px;">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="eyebrow">One call, start to finish</p>
+      <h2>Watch me place 200 lbs of beef.</h2>
+      <p>A real dispatch, played back. The tracker follows the call through all seven stages — hover any stage to pause and see what it does.</p>
+    </div>
+
+    <div class="player reveal">
+      <div class="p-head">
+        <div class="idbox"><span class="p-live"><i></i>Live</span><span>DONATION · 2291</span></div>
+        <span class="p-clock" id="pclock">47:12:00 LEFT</span>
+      </div>
+      <div class="tracker" id="tracker"></div>
+      <div class="stage-info" id="stageInfo"><div class="in">
+        <span class="k" id="siK"></span>
+        <h4 id="siT"></h4>
+        <p id="siB"></p>
+      </div></div>
+      <div class="p-body">
+        <div class="tx" id="tx"></div>
+        <div class="rec">
+          <div class="rk">The record — live</div>
+          <div class="rrow"><span class="f">Item</span><span class="v" id="rItem"><span class="muted">—</span></span></div>
+          <div class="rrow" id="rowStatus"><span class="f">Status</span><span class="v" id="rStatus"><span class="muted">—</span></span></div>
+          <div class="rrow" id="rowPantry"><span class="f">Pantry</span><span class="v" id="rPantry"><span class="muted">—</span></span></div>
+          <div class="rrow" id="rowCold"><span class="f">Cold storage</span><span class="v" id="rCold"><span class="muted">—</span></span></div>
+          <div class="rrow" id="rowOut"><span class="f">Outcome</span><span class="v" id="rOut"><span class="muted">—</span></span></div>
+        </div>
+      </div>
+      <div class="p-foot">
+        <span class="p-hint" id="pHint">Playing · hover a stage to pause</span>
+        <button class="replay" id="replay">↻ Replay the call</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ WHY I'M FAST ============================ -->
+<section class="sec" id="fast">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="eyebrow">Why I'm fast</p>
+      <h2>Ranked before the first ring.</h2>
+      <p>The difference isn't dialing faster. It's knowing who to call <strong>before</strong> the phone leaves the cradle.</p>
+    </div>
+    <div class="lanes reveal">
+      <div class="lane">
+        <div class="topline"></div>
+        <span class="who">A person</span>
+        <div class="dur">Hours</div>
+        <ul>
+          <li>Dial. Wait for a callback.</li>
+          <li>Hear no.</li>
+          <li>Reopen the spreadsheet. Dial again.</li>
+        </ul>
+      </div>
+      <div class="lane donna">
+        <div class="topline"></div>
+        <span class="who">Donna</span>
+        <div class="dur">Minutes</div>
+        <ul>
+          <li>Scores every pantry <strong>before</strong> dialing — clock, freezer, capacity, need.</li>
+          <li>Hears no, calls the next <em>instantly</em>.</li>
+          <li>Runs every donation at once.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="punch reveal"><strong>Not "who might take this." Who is the single best call to make right now.</strong></p>
+  </div>
+</section>
+
+<!-- ========================== WHAT I REMEMBER ========================== -->
+<section class="sec" id="memory">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="eyebrow">The part a human can't do</p>
+      <h2>Every call makes the next one better.</h2>
+      <p>I keep a memory of every pantry and every donor — and I update it <strong>while I'm still on the phone</strong>.</p>
+    </div>
+    <div class="vigs reveal">
+      <div class="vig">
+        <p class="said"><span class="spk">Donna:</span> "Since you have refrigeration —"<br><span class="spk">Pantry:</span> "We don't have a refrigerator."</p>
+        <span class="tag">Corrected on the call</span>
+        <p class="did">The record was wrong. It isn't anymore — and I'll never offer them frozen goods again.</p>
+      </div>
+      <div class="vig neg">
+        <p class="said"><span class="spk">Donor:</span> "48 hours left on this beef."<br><span class="spk">Pantry:</span> "It arrived spoiled."</p>
+        <span class="tag">Scored against the donor</span>
+        <p class="did">Their next "48 hours" gets the skepticism it earned.</p>
+      </div>
+    </div>
+    <p class="punch reveal"><strong>A person would have to hang up, remember, find the row, and edit it — for every call, all day. That's why it never happens.</strong></p>
+  </div>
+</section>
+
+<!-- =========================== HUMAN GATE BAND ========================== -->
+<div class="gate">
+  <div class="wrap in reveal">
+    <h3>Stop me <em>at any point.</em></h3>
+    <p><strong>Nothing dispatches without a person able to say no.</strong> Every donation waits at the gate until you approve it — I do the legwork, you keep the wheel.</p>
+  </div>
+</div>
+
+<!-- ============================= FAIRNESS ============================= -->
+<section class="sec" id="fair">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="eyebrow">Fair by design</p>
+      <h2>AI at the edges. <br>Fairness math in the middle.</h2>
+    </div>
+    <div class="fair-card reveal">
+      <h3>The allocation decision is <em>never</em> made by an LLM.</h3>
+      <p class="fp">AI parses the calls and does the talking — but <strong>who gets the food</strong> is decided by a deterministic, auditable scoring engine. Same inputs, same answer, every time. Five signals, weighed in the open:</p>
+      <div class="signals">
+        <span class="signal" style="transition-delay:0ms">Feasibility<i style="--gap:8%"></i></span>
+        <span class="signal" style="transition-delay:90ms">Cold chain<i style="--gap:14%"></i></span>
+        <span class="signal" style="transition-delay:180ms">Capacity<i style="--gap:26%"></i></span>
+        <span class="signal" style="transition-delay:270ms">Equity<i style="--gap:20%"></i></span>
+        <span class="signal" style="transition-delay:360ms">Preferences<i style="--gap:38%"></i></span>
+      </div>
+      <p class="fair-fine">Equity is a live signal, not a report — pantries that keep getting passed over score higher next round, so the same three big pantries don't absorb every donation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ WHO IT'S FOR ============================ -->
+<section class="sec" id="who">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <p class="eyebrow">Who it's for</p>
+      <h2>If you move surplus food, I can help.</h2>
+    </div>
+    <div class="aud reveal">
+      <div class="aud-card">
+        <span class="em">🥫</span>
+        <h4>Food banks &amp; pantries</h4>
+        <p>I only offer you what you can actually store — and I <strong>learn your capacity</strong> from every conversation.</p>
+      </div>
+      <div class="aud-card">
+        <span class="em">🛒</span>
+        <h4>Grocers &amp; restaurants</h4>
+        <p>Call once when the walk-in's full. You'll <strong>hear back with an itemized result</strong> — what was placed, where, and what wasn't.</p>
+      </div>
+      <div class="aud-card">
+        <span class="em">🚜</span>
+        <h4>Farms &amp; distributors</h4>
+        <p>Truckloads on a clock. I <strong>split multi-item loads</strong> and place each item where it actually fits.</p>
+      </div>
+      <div class="aud-card">
+        <span class="em">📞</span>
+        <h4>Rescue dispatchers</h4>
+        <p>I'm your phone bank: <strong>you approve, I dial</strong>, and you watch every call land on the board live.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== UNDER THE HOOD =========================== -->
+<div class="hood" id="hood">
+  <div class="wrap in">
+    <div class="sec-head reveal" style="margin-bottom:0;">
+      <p class="eyebrow">Under the hood</p>
+      <h2>For the builders in the room.</h2>
+    </div>
+    <div class="hood-grid reveal">
+      <div>
+        <h3>Five agents on the job</h3>
+        <ul>
+          <li><span class="t">Intake Parser</span><span class="d">any channel → a structured, multi-item donation</span></li>
+          <li><span class="t">Offer Drafter</span><span class="d">writes the pitch each pantry actually hears</span></li>
+          <li><span class="t">Recipient Caller</span><span class="d">voice-calls pantries and community-agency leads</span></li>
+          <li><span class="t">Manager Copilot</span><span class="d">tune the whole system by chatting with it</span></li>
+          <li><span class="t">Donor Callback</span><span class="d">itemized "here's what we could and couldn't take"</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>The stack</h3>
+        <ul>
+          <li><span class="t">VAPI + Twilio</span><span class="d">real-time voice, inbound and outbound</span></li>
+          <li><span class="t">Gemini 2.5 Flash</span><span class="d">agent brains · Deepgram transcription</span></li>
+          <li><span class="t">Scoring engine</span><span class="d"><strong>deterministic</strong> — no LLM touches allocation</span></li>
+          <li><span class="t">Workers + D1</span><span class="d">runs at the edge; nothing lives on a laptop</span></li>
+          <li><span class="t">MemoryStore</span><span class="d">pluggable — point it at <strong>your</strong> database with one class</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="hood-note reveal"><b>Runs fully offline in mock mode</b> — zero API keys, zero network calls. The entire demo scenario works on a plane.</p>
+  </div>
+</div>
+
+<!-- ============================= REACH OUT ============================= -->
+<section class="cta-sec" id="customize">
+  <div class="wrap">
+    <div class="cta reveal">
+      <p class="eyebrow">Take it further</p>
+      <h2>If this fits how you move food, let's shape it to you.</h2>
+      <p>My whole architecture is modular — the intake questions, the ranking signals, the scripts I read, the network I call. <strong>Every stage on that tracker is a seam you can open.</strong> If you're a builder who wants to extend me, or a food bank that wants me tuned to your donors and pantries, reach out and we'll customize it.</p>
+      <div class="paths">
+        <div class="path"><p class="k">For builders</p><h4>Fork the pipeline</h4><p>Swap the voice stack, the LLM, the scoring, or bolt on a stage of your own. The pipeline is the contract — the parts behind it are yours.</p></div>
+        <div class="path"><p class="k">For food banks</p><h4>Tune me to your network</h4><p>Bring your donors, pantries, cold-storage rules and priorities. I learn them and dispatch by them — no spreadsheet, no phone tree.</p></div>
+      </div>
+      <div class="cta-actions">
+        <a class="btn solid" href="mailto:hello@vivek-patel.com?subject=Donna%20—%20let's%20customize%20it">Reach out →</a>
+        <a class="btn line" href="#top">Back to the top</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer>
+  <div class="wrap in">
+    <div>
+      <p class="fm">Donna<i>.</i></p>
+      <p class="ft">Nobody wastes food on purpose. They just run out of time.</p>
+    </div>
+    <div class="col">
+      <h5>Site</h5>
+      <a href="#listen">Listen in</a>
+      <a href="#fast">Why I'm fast</a>
+      <a href="#memory">What I remember</a>
+      <a href="#fair">Fair by design</a>
+      <a href="#hood">Under the hood</a>
+    </div>
+    <div class="col">
+      <h5>Project</h5>
+      <a href="https://donna-dashboard-brown.vercel.app" target="_blank" rel="noopener">Live console ↗</a>
+      <a href="#customize">Customize it</a>
+      <a href="mailto:hello@vivek-patel.com">hello@vivek-patel.com</a>
+    </div>
+  </div>
+  <div class="wrap base">
+    <span>Built at the AI Supply Chain Hackathon</span>
+    <span>Food rescue, dispatched.</span>
+  </div>
+</footer>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+
+  /* ---------------- nav: shadow + scrollspy ---------------- */
+  (function () {
+    const nav = $('nav');
+    window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 8), { passive: true });
+    const links = Array.from($('navLinks').querySelectorAll('a'));
+    const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    function spy() {
+      let live = 0;
+      secs.forEach((s, i) => { if (s.getBoundingClientRect().top < window.innerHeight * 0.4) live = i; });
+      links.forEach((a, i) => a.classList.toggle('live', i === live && window.scrollY > 200));
+    }
+    window.addEventListener('scroll', spy, { passive: true }); spy();
+  })();
+
+  /* ---------------- stages ---------------- */
+  const STAGES = [
+    { label:'Inbound', k:'Stage 01 · Donor on the phone', t:'A donor calls with surplus',
+      b:'A grocer, farm, or restaurant with food on the clock calls my line. I pick up like a dispatcher who <strong>already knows the whole network</strong>.' },
+    { label:'Transcribe', k:'Stage 02 · Speech to text, live', t:'Every word becomes text',
+      b:'The call becomes text in real time — the transcript is the source of truth for everything that follows.' },
+    { label:'Parse', k:'Stage 03 · Reading the offer', t:'I read what actually matters',
+      b:'I parse the conversation into the three things that decide everything: <strong>what</strong> it is, <strong>how much</strong>, and <strong>how long</strong> it stays good.' },
+    { label:'Record', k:'Stage 04 · Structured record', t:'A record you can act on',
+      b:'The call turns into a structured donation — not a note on a sticky and a name to call back later.' },
+    { label:'Your call', k:'Stage 05 · Human gate', t:'A person signs off first',
+      b:'<strong>Nothing dispatches without someone able to say no.</strong> I do the legwork; the go/no-go stays human.' },
+    { label:'Dispatch', k:'Stage 06 · Outbound calls', t:'I call the best pantry first',
+      b:'Ranked by clock, cold storage, capacity and need. A no? I call the next one <strong>instantly</strong>.' },
+    { label:'Close', k:'Stage 07 · Closing the loop', t:'Confirmed — and remembered',
+      b:'I confirm pickup with the donor and <strong>remember everything I learned</strong> — the next call is smarter than this one.' },
+  ];
+  const tracker = $('tracker');
+  const steps = STAGES.map((s, i) => {
+    const el = document.createElement('div'); el.className = 'step'; el.tabIndex = 0;
+    el.innerHTML = '<div class="sd"></div><div class="sl">' + s.label + '</div>';
+    tracker.appendChild(el);
+    el.addEventListener('mouseenter', () => hoverStage(i)); el.addEventListener('mouseleave', leaveStage);
+    el.addEventListener('focus', () => hoverStage(i)); el.addEventListener('blur', leaveStage);
+    return el;
+  });
+  let stage = -1;
+  function setStage(i) {
+    stage = i;
+    steps.forEach((el, k) => { el.classList.toggle('done', k < i); el.classList.toggle('act', k === i); });
+  }
+  function allDone() { stage = STAGES.length; steps.forEach(el => { el.classList.add('done'); el.classList.remove('act'); }); }
+
+  /* ---------------- transcript + record helpers ---------------- */
+  const tx = $('tx');
+  function say(who, text, cls) {
+    const el = document.createElement('div');
+    el.className = 'tx-line ' + cls;
+    el.innerHTML = '<span class="spk">' + who + '</span><span class="txt">' + text + '</span>';
+    tx.appendChild(el);
+    requestAnimationFrame(() => { el.classList.add('in'); tx.scrollTop = tx.scrollHeight; });
+  }
+  function sys(text) {
+    const el = document.createElement('div');
+    el.className = 'tx-line sys';
+    el.innerHTML = '<span class="txt">' + text + '</span>';
+    tx.appendChild(el);
+    requestAnimationFrame(() => { el.classList.add('in'); tx.scrollTop = tx.scrollHeight; });
+  }
+  function set(rowId, valId, html, kind) {
+    $(valId).innerHTML = html;
+    const row = $(rowId);
+    row.classList.remove('flash', 'flash-good', 'flash-bad'); void row.offsetWidth;
+    row.classList.add(kind === 'good' ? 'flash-good' : kind === 'bad' ? 'flash-bad' : 'flash');
+  }
+
+  /* ---------------- the script (ticks of 100ms) ---------------- */
+  const SCRIPT = [
+    [3,   () => { setStage(0); say('Donor · Bay Grocer', '"Hi — I\'ve got 200 pounds of fresh beef. It\'s got maybe 48 hours."', 'pantry'); }],
+    [18,  () => { setStage(1); say('Donna', '"Got it — 200 pounds, fresh beef, 48-hour window. I\'ll take it from here."', 'donna'); }],
+    [34,  () => { setStage(2); sys('Parsing the offer…'); }],
+    [44,  () => { setStage(3); set('rowStatus', 'rStatus', '<span class="work">Logged</span>');
+                  $('rItem').innerHTML = '200 lbs · fresh beef · 48 h'; }],
+    [58,  () => { setStage(4); sys('Sent for approval — <span class="g">approved by dispatcher</span>'); set('rowStatus', 'rStatus', '<span class="work">Ranking 42 pantries…</span>'); }],
+    [74,  () => { setStage(5); set('rowStatus', 'rStatus', '<span class="work">Calling…</span>');
+                  set('rowPantry', 'rPantry', "St. Anthony's · 2.1 mi");
+                  set('rowCold', 'rCold', 'Freezer <span class="good">✓</span> <span class="muted">(on record)</span>'); }],
+    [86,  () => say('Donna', '"I have 200 lbs of fresh beef, good for 48 hours. Since you have refrigeration —"', 'donna')],
+    [106, () => say("St. Anthony's", '"We don\'t have a refrigerator."', 'pantry')],
+    [118, () => { set('rowCold', 'rCold', '<span class="struck">Freezer ✓</span> <span class="bad">None — corrected on call</span>', 'bad');
+                  set('rowStatus', 'rStatus', '<span class="bad">Declined</span> <span class="muted">· record updated</span>', 'bad'); }],
+    [130, () => say('Donna', '"Understood — thank you. I\'ll update our records."', 'donna')],
+    [142, () => { set('rowStatus', 'rStatus', '<span class="work">Redialing next best…</span>');
+                  set('rowPantry', 'rPantry', 'Glide Memorial · 3.4 mi');
+                  set('rowCold', 'rCold', 'Freezer <span class="good">✓</span> <span class="muted">(verified 2d ago)</span>'); }],
+    [154, () => say('Donna', '"200 lbs of fresh beef, 47 hours left. Can you take it today?"', 'donna')],
+    [172, () => say('Glide Memorial', '"Yes — bring it by four."', 'pantry')],
+    [182, () => set('rowStatus', 'rStatus', '<span class="good">Accepted</span>', 'good')],
+    [192, () => { setStage(6); say('Donna', '"Good news — Glide Memorial will take all of it. Pickup by four."', 'donna'); }],
+    [206, () => { set('rowOut', 'rOut', '<span class="good">PLACED</span> <span class="muted">· 4 min · 0 human calls</span>', 'good'); allDone(); }],
+  ];
+  const T_END = 250;
+
+  /* ---------------- tick engine (pausable) ---------------- */
+  let tick = 0, cursor = 0, paused = false, engine = null;
+  const clockEl = $('pclock');
+  const CLOCK0 = 47 * 3600 + 12 * 60;
+  function paintClock() {
+    const s = Math.max(0, CLOCK0 - Math.floor(tick / 10));
+    const p = n => String(n).padStart(2, '0');
+    clockEl.textContent = p(Math.floor(s / 3600)) + ':' + p(Math.floor(s % 3600 / 60)) + ':' + p(s % 60) + ' LEFT';
+  }
+  function resetPlayback() {
+    tick = 0; cursor = 0;
+    tx.innerHTML = '';
+    setStage(-1); steps.forEach(el => el.classList.remove('done', 'act'));
+    $('rItem').innerHTML = '<span class="muted">—</span>';
+    ['rStatus', 'rPantry', 'rCold', 'rOut'].forEach(id => $(id).innerHTML = '<span class="muted">—</span>');
+    ['rowStatus', 'rowPantry', 'rowCold', 'rowOut'].forEach(id => $(id).classList.remove('flash', 'flash-good', 'flash-bad'));
+    paintClock();
+  }
+  function startEngine() {
+    if (engine || reduced) return;
+    engine = setInterval(() => {
+      if (paused) return;
+      tick++;
+      if (tick % 10 === 0) paintClock();
+      while (cursor < SCRIPT.length && SCRIPT[cursor][0] <= tick) { SCRIPT[cursor][1](); cursor++; }
+      if (tick >= T_END) { resetPlayback(); }
+    }, 100);
+  }
+  function stopEngine() { if (engine) { clearInterval(engine); engine = null; } }
+
+  /* ---------------- hover a stage: pause + explain ---------------- */
+  const info = $('stageInfo'), hintEl = $('pHint');
+  function hoverStage(i) {
+    paused = true;
+    $('siK').textContent = STAGES[i].k;
+    $('siT').textContent = STAGES[i].t;
+    $('siB').innerHTML = STAGES[i].b;
+    info.classList.add('open');
+    hintEl.textContent = 'Paused · ' + STAGES[i].label;
+  }
+  function leaveStage() {
+    paused = false;
+    info.classList.remove('open');
+    hintEl.textContent = 'Playing · hover a stage to pause';
+  }
+
+  $('replay').addEventListener('click', () => {
+    if (reduced) { renderFinal(); return; }
+    resetPlayback(); startEngine();
+  });
+
+  /* ---------------- reduced motion: final state ---------------- */
+  function renderFinal() {
+    tx.innerHTML = '';
+    say('Donor · Bay Grocer', '"200 pounds of fresh beef — maybe 48 hours."', 'pantry');
+    say('Donna', '"Since you have refrigeration —"', 'donna');
+    say("St. Anthony's", '"We don\'t have a refrigerator."', 'pantry');
+    say('Glide Memorial', '"Yes — bring it by four."', 'pantry');
+    say('Donna', '"Placed with Glide Memorial — pickup by four."', 'donna');
+    $('rItem').innerHTML = '200 lbs · fresh beef · 48 h';
+    $('rStatus').innerHTML = '<span class="good">Accepted</span>';
+    $('rPantry').innerHTML = 'Glide Memorial · 3.4 mi';
+    $('rCold').innerHTML = '<span class="struck">Freezer ✓</span> <span class="bad">None at St. Anthony\'s — corrected</span>';
+    $('rOut').innerHTML = '<span class="good">PLACED</span> <span class="muted">· 4 min · 0 human calls</span>';
+    allDone();
+    document.querySelectorAll('.tx-line').forEach(l => l.classList.add('in'));
+  }
+
+  resetPlayback();
+  if (reduced) {
+    renderFinal();
+  } else if ('IntersectionObserver' in window) {
+    new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) startEngine(); else stopEngine(); }), { threshold: 0.25 })
+      .observe(document.querySelector('.player'));
+  } else {
+    startEngine();
+  }
+
+  /* ---------------- reveals ---------------- */
+  (function () {
+    const els = document.querySelectorAll('.reveal');
+    if (reduced || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); return; }
+    const io = new IntersectionObserver(en => en.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.14 });
+    els.forEach(e => io.observe(e));
+  })();
+</script>
+</content>
