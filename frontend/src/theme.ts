@@ -134,6 +134,14 @@ export function spoilCountdown(receivedAt: string, hoursToSpoil: number): string
 export const FOOD_BANK = { name: 'SF-Marin Food Bank', lat: 37.7541, lng: -122.3924 } as const;
 
 /**
+ * The public donation line (Twilio → VAPI → the Worker). DISPLAY-ONLY: the
+ * number lives in the Twilio/VAPI config, not in any env the frontend can read,
+ * so the demo stage's visitor guide needs it spelled out here. MUST stay in
+ * lockstep with the Twilio number attached to the VAPI assistant.
+ */
+export const DONATION_LINE = { display: '+1 (628) 500-7191', tel: '+16285007191' } as const;
+
+/**
  * Route arc colors (§I.3). leaflet pathOptions is plain JS and CANNOT read CSS
  * custom properties, so the arc hex lives here — the single source of truth
  * alongside the other palette constants (TERM_COLORS above). These MUST stay in

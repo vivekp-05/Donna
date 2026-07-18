@@ -133,6 +133,25 @@ body {
 .seg-btn:hover { color: var(--text); }
 .seg-btn.on { color: var(--text); background: var(--surface-3); }
 
+/* Hackathon-win banner — sits between the segments and the right-side ribbon
+   controls, on every view. Same micro-label voice as .mode-tag but in the deep
+   green: coral stays reserved for live state, and the win is Donna speaking,
+   not an alert. Sheds its detail text, then itself, as the ribbon narrows. */
+.win-banner {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(36,82,59,0.35); border-radius: var(--radius-chip);
+  padding: 3px 9px 3px 3px;
+  cursor: default;
+}
+.wb-tag {
+  font: 650 10px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--bg); background: var(--green); border-radius: var(--radius-chip);
+  padding: 3px 7px;
+}
+.wb-text { font: 600 11px/1 var(--sans); color: var(--text-dim); white-space: nowrap; }
+@media (max-width: 1180px) { .wb-text { display: none; } .win-banner { padding-right: 3px; } }
+@media (max-width: 760px)  { .win-banner { display: none; } }
+
 /* Pitch — right-side ribbon button, immediately left of the mode tag. Reads as
    a peer of the mode tag rather than a third Dispatch/Demo segment: the deck is
    a presentation surface, not an ops view. */
@@ -698,6 +717,34 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 .draft-state { margin-top: 8px; font: 650 10px/1 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--good-mute); }
 .draft-err { margin: 4px 0 0; font: 500 13px/1.45 var(--sans); color: var(--bad-mute); }
+
+/* ---- try panel: the idle-state visitor guide --------------------------------
+   Owns the inbound edge only while the stage is idle. No rail exists yet, so it
+   sits up at the rail's own clearance from the header instead of below a rail
+   that isn't there. Same opaque skin as every panel; the coral accent goes to
+   the dialable number — the one thing we want a visitor to act on. */
+.stage-panel.tryme { top: 84px; }
+.try-lede { margin: 0; font: 400 13px/1.5 var(--sans); color: var(--text-dim); }
+.try-step { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.try-num {
+  flex: 0 0 auto; padding-top: 1px;
+  font: 650 11px/1.5 var(--sans); letter-spacing: 0.06em;
+  color: var(--text-faint); font-variant-numeric: tabular-nums;
+}
+.try-body { min-width: 0; }
+.try-head { display: block; font: 600 13px/1.3 var(--sans); color: var(--text); }
+.try-tel {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 6px 0 2px;
+  font: 650 16px/1.2 var(--sans); font-variant-numeric: tabular-nums;
+  color: var(--hot); text-decoration: none;
+}
+.try-tel:hover { text-decoration: underline; }
+.try-copy { margin: 4px 0 0; font: 400 12px/1.5 var(--sans); color: var(--text-faint); }
+.try-note {
+  margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border);
+  font: 400 11.5px/1.5 var(--sans); color: var(--text-faint); font-style: italic;
+}
 
 /* ---- gate aside: inventory + chat (§M.2) ---------------------------------
    The right-hand column that belongs to rail stage 05 and nothing else.

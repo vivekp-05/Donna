@@ -5,7 +5,7 @@ import type {
 } from '../types';
 import type { DemoBus, DemoRoute } from '../demoBus';
 import { setDemoBus, resetDemoBus } from '../demoBus';
-import { FOOD_BANK, routeVia, verdictCopy, humanize } from '../theme';
+import { DONATION_LINE, FOOD_BANK, routeVia, verdictCopy, humanize } from '../theme';
 import { ChannelIcon, Phone, Mail, MessageSquare } from '../icons';
 import { GateAside } from './GateAside';
 
@@ -505,6 +505,8 @@ export function DemoStage(): React.JSX.Element {
     <div className="stage">
       {phase !== 'idle' && <PipelineRail states={railStatesFromIndex(railIndex(phase))} />}
 
+      {phase === 'idle' && <TryPanel vapi={mode == null ? null : vapi} />}
+
       {showInbound && donation && (
         <InboundPanel donation={donation} lines={inboundLines} />
       )}
@@ -744,6 +746,70 @@ function liveResolveItem(it: DonationItem): { ok: boolean; recipientName?: strin
   }
   if (it.status === 'unplaceable') return { ok: false };
   return null;
+}
+
+/* ----------------------------------------------------------- try panel */
+
+/**
+ * Idle-state visitor guide — the two ways to try Donna. Mounted ONLY while the
+ * stage is idle: once a run starts (canned or live) the pipeline needs both
+ * edges of the screen back, and a how-to card over a running demo is noise. It
+ * borrows the inbound panel's edge, which is guaranteed empty at idle.
+ *
+ * The phone step is always shown — the line is real even when THIS console is
+ * on simulator voice (local dev proxies to a local backend) — but in that case
+ * a live call lands on the deployed console, not here, and the footnote says
+ * so rather than letting a visitor dial and watch nothing happen.
+ *
+ * `vapi` is tri-state: null = /api/health hasn't answered yet, so show NEITHER
+ * the "line open" chip nor the simulator footnote — flashing "voice is
+ * simulated" at the deployed console for the first second is the panel lying.
+ */
+function TryPanel({ vapi }: { vapi: boolean | null }) {
+  return (
+    <section className="stage-panel inbound tryme">
+      <header className="sp-head">
+        <span className="sp-title display-face">Try Donna</span>
+        {vapi === true && <span className="sp-live">Line open</span>}
+      </header>
+      <p className="try-lede">
+        Donna answers the phone, works out what a donation is, and holds it for
+        a human before any pantry is called. Two ways to see it:
+      </p>
+      <div className="try-step">
+        <span className="try-num">01</span>
+        <div className="try-body">
+          <span className="try-head">Call the donation line</span>
+          <a className="try-tel" href={`tel:${DONATION_LINE.tel}`}>
+            <Phone size={13} /> {DONATION_LINE.display}
+          </a>
+          <p className="try-copy">
+            Donna picks up. Say what you're donating — what it is, roughly how
+            much, when it spoils, and a pickup address. Hang up, and the call
+            lands on this page for your approval.
+          </p>
+        </div>
+      </div>
+      <div className="try-step">
+        <span className="try-num">02</span>
+        <div className="try-body">
+          <span className="try-head">No phone handy? Run the demo</span>
+          <p className="try-copy">
+            <strong>Run demo</strong> below plays a scripted donation through
+            the same pipeline — the inbound call, the routing verdict, your
+            approval gate, Donna calling pantries, and the callback to the
+            donor.
+          </p>
+        </div>
+      </div>
+      {vapi === false && (
+        <p className="try-note">
+          Voice is simulated on this console — a real call to the line shows up
+          on the deployed dashboard, not here.
+        </p>
+      )}
+    </section>
+  );
 }
 
 /* ------------------------------------------------------------- inbound */
