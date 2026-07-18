@@ -43,6 +43,10 @@ function Shell() {
           <button className={`seg-btn${view === 'dispatch' ? ' on' : ''}`} onClick={() => setView('dispatch')}>Dispatch</button>
           <button className={`seg-btn${view === 'demo' ? ' on' : ''}`} onClick={() => setView('demo')}>Demo</button>
         </div>
+        <span className="win-banner" title="AI Supply Chain Hackathon — July 15–17 2026, San Francisco">
+          <span className="wb-tag">First prize</span>
+          <span className="wb-text">AI Supply Chain Hackathon · Pebblebed × Capgemini</span>
+        </span>
         <div className="hspacer" />
         {/* Pitch sits at the right of the ribbon, immediately left of the mode
             tag: the deck opens the room, then we cross to Dispatch/Demo. */}
