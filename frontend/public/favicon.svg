@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The wordmark, tile-sized: serif D in ink + the coral dot, on the ivory
+       canvas. Georgia is the deck/console's own fallback for Fraunces — a
+       favicon can't fetch webfonts, so the fallback face IS the brand face
+       here. Colors in lockstep with styles.css :root (ivory/ink/coral). -->
+  <rect width="64" height="64" rx="14" fill="#f7f3ea"/>
+  <text x="28" y="48" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700" text-anchor="middle" fill="#22231d">D</text>
+  <circle cx="51" cy="43.5" r="6.5" fill="#e4572e"/>
+</svg>
