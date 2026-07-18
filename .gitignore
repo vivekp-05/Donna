@@ -24,3 +24,5 @@ backend/data/db.json
 .DS_Store
 *.log
 frontend/dist/
+.vercel
+.env*
