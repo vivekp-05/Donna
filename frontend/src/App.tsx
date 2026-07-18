@@ -28,6 +28,7 @@ function Shell() {
   const [view, setView] = useState<View>('pitch');
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [mgrOpen, setMgrOpen] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const live = !!mode && (mode.llm !== 'mock' || mode.db !== 'json' || mode.voice !== 'sim');
   const modeTip = mode ? `LLM ${mode.llm} · DB ${mode.db} · Voice ${mode.voice}` : 'connecting…';
@@ -61,7 +62,31 @@ function Shell() {
         <button className="icon-btn mgr" onClick={() => setMgrOpen((o) => !o)} title="Manager console" aria-label="Manager console">
           <MessageSquare />{appliedPatchCount > 0 && <span className="badge">{appliedPatchCount}</span>}
         </button>
-        <button className="icon-btn" onClick={reset} disabled={busy.init} title="Reset demo" aria-label="Reset demo"><RotateCcw /></button>
+        {/* Reset arms a confirm popover rather than firing: /api/demo/reset wipes
+            every donation and call and reseeds the store, which is a lot to lose
+            to a stray click. Clicking the icon again cancels. */}
+        <button
+          className={`icon-btn${confirmReset ? ' armed' : ''}`}
+          onClick={() => setConfirmReset((o) => !o)}
+          disabled={busy.init}
+          title="Reset demo"
+          aria-label="Reset demo"
+        >
+          <RotateCcw />
+        </button>
+        {confirmReset && (
+          <div className="confirm-pop" role="alertdialog" aria-label="Confirm demo reset">
+            <span className="cp-text">
+              Reset the demo? Every donation and call is wiped and the seed data restored.
+            </span>
+            <div className="cp-actions">
+              <button className="btn-quiet" onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button className="btn-primary" onClick={() => { setConfirmReset(false); void reset(); }}>
+                Reset demo
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {view === 'dispatch' && (

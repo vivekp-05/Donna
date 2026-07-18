@@ -585,9 +585,7 @@ export function DemoStage(): React.JSX.Element {
               </>
             );
           })()}
-          {phase === 'done' && (
-            <button className="btn-quiet" onClick={() => void resetStage()}>Reset</button>
-          )}
+          {phase === 'done' && <ResetButton onReset={() => void resetStage()} />}
           {animating && (
             <button className="btn-quiet" onClick={skip}>Skip</button>
           )}
@@ -746,6 +744,33 @@ function liveResolveItem(it: DonationItem): { ok: boolean; recipientName?: strin
   }
   if (it.status === 'unplaceable') return { ok: false };
   return null;
+}
+
+/* --------------------------------------------------------- reset button */
+
+/**
+ * Reset with one more click — the server's /api/demo/reset wipes every
+ * donation and call and reseeds the store, which is a lot to lose to a stray
+ * click at the end of a run. Arms on the first press, fires on the second,
+ * and stands down by itself after 5s so a half-armed button can't linger.
+ */
+function ResetButton({ onReset }: { onReset: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const id = window.setTimeout(() => setArmed(false), 5000);
+    return () => window.clearTimeout(id);
+  }, [armed]);
+  if (!armed) {
+    return <button className="btn-quiet" onClick={() => setArmed(true)}>Reset</button>;
+  }
+  return (
+    <>
+      <span className="muted">Wipe the demo data and start over?</span>
+      <button className="btn-quiet" onClick={() => setArmed(false)}>Cancel</button>
+      <button className="btn-primary" onClick={() => { setArmed(false); onReset(); }}>Reset</button>
+    </>
+  );
 }
 
 /* ----------------------------------------------------------- try panel */
@@ -1208,9 +1233,7 @@ function LiveStage({
                 : 'Dispatching — Donna is working the list.'}
             </span>
           )}
-          {phase === 'done' && (
-            <button className="btn-quiet" onClick={onReset}>Reset</button>
-          )}
+          {phase === 'done' && <ResetButton onReset={onReset} />}
         </div>
       </div>
 

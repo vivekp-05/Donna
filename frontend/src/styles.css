@@ -120,7 +120,7 @@ body {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
-.wordmark { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -0.4px; color: var(--text); }
+.wordmark { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: -0.4px; color: var(--text); }
 .wordmark .wm-dot { color: var(--hot); }
 .hspacer { flex: 1; }
 
@@ -185,6 +185,22 @@ body {
 }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Reset icon while its confirm popover is open. */
+.icon-btn.armed { background: var(--surface-3); color: var(--text); }
+
+/* Reset-demo confirm — one more click before wiping the store. Anchored under
+   the header's reset icon; the same opaque card as every floating surface. */
+.confirm-pop {
+  position: fixed; top: 50px; right: 12px; z-index: 30;
+  width: 240px;
+  background: var(--panel); border: 1px solid var(--border-2);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 12px 14px;
+  animation: stage-in 160ms var(--ease) both;
+}
+.cp-text { display: block; font: 400 12.5px/1.5 var(--sans); color: var(--text-dim); }
+.cp-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.cp-actions .btn-quiet, .cp-actions .btn-primary { padding: 7px 12px; font-size: 12px; }
 .icon-btn .badge {
   position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 3px;
   background: var(--hot); color: var(--hot-ink); border-radius: 20px; font: 700 9px var(--sans);
