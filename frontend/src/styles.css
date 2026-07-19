@@ -177,13 +177,6 @@ body {
 }
 .mode-tag.live { color: var(--hot); border-color: rgba(228,87,46,0.4); }
 
-/* Celebration confetti — full-viewport so the fall reaches the bottom of the
-   page, but layered BELOW the ribbon (z 16 < .hbar's 20): pieces spawned at the
-   banner's bottom edge emerge from UNDER it, and anything arcing up hides
-   behind the opaque bar. Above the pitch stage (15) and the map, catches
-   nothing, and the component unmounts it once the last piece exits. */
-.confetti { position: fixed; inset: 0; z-index: 16; pointer-events: none; }
-
 .icon-btn {
   appearance: none; border: 0; background: transparent; cursor: pointer; position: relative;
   color: var(--text-dim); width: 30px; height: 30px; border-radius: var(--radius-s);

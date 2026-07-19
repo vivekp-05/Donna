@@ -7,7 +7,6 @@ import { MapView } from './components/MapView';
 import { DetailPanel } from './components/DetailPanel';
 import { NetworkPanel } from './components/NetworkPanel';
 import { DemoStage, CLEAR_STAGE_EVENT } from './components/DemoStage';
-import { WinConfetti } from './components/WinConfetti';
 import { PitchStage } from './components/PitchStage';
 import { ManagerDrawer } from './components/ManagerDrawer';
 import { MessageSquare, RotateCcw } from './icons';
@@ -55,11 +54,6 @@ function Shell() {
     <div className="app">
       {/* full-bleed map hero under everything */}
       <MapView />
-
-      {/* One-shot celebration ~1.5s after load: pops from UNDER the win banner
-          (the canvas layers below the ribbon, so pieces emerge from beneath it)
-          and falls the full height of the page, then unmounts. */}
-      <WinConfetti />
 
       <header className="hbar">
         <span className="wordmark">Donna<span className="wm-dot">.</span></span>
